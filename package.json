@@ -1,0 +1,15 @@
+{
+    "name": "wellingtomdev",
+    "author": "Wellington Mesquita",
+    "version": "1.0.0",
+    "main": "src/index.js",
+    "scripts": {
+        "test": "vitest"
+    },
+    "devDependencies": {
+        "vitest": "^1.5.2"
+    },
+    "keywords": [],
+    "license": "ISC",
+    "description": "Um pacote de utilidades para ajudar no desenvolvimento de projetos em JavaScript."
+}
