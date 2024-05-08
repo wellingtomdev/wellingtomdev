@@ -1,10 +1,12 @@
 {
     "name": "wellingtomdev",
     "author": "Wellington Mesquita",
-    "version": "1.0.3",
+    "version": "1.1.1",
     "main": "src/index.js",
     "scripts": {
-        "test": "vitest"
+        "test": "vitest",
+        "build": "tsc",
+        "pub": "npm run build && npm publish"
     },
     "devDependencies": {
         "typescript": "^5.4.5",
@@ -17,5 +19,9 @@
         "axios": "^1.6.8",
         "socket.io": "^4.7.5",
         "socket.io-client": "^4.7.5"
+    },
+    "exports": {
+        "import": "./src/index.js",
+        "require": "./dist/index.js"
     }
 }

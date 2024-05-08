@@ -36,7 +36,7 @@ function onMessage(socket, request = {}) {
 
     function emitError(messageError = 'Error', id = undefined) {
         const error = { message: messageError }
-        if(!id) throw error
+        if (!id) throw error
         return socket.emit('response', { id, response: undefined, success: false, error })
     }
 

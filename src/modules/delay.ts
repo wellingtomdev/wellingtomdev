@@ -1,6 +1,6 @@
-async function delay(ms) {
+async function delay(ms: number) {
     if (!ms) return
     return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-module.exports = delay
+export default delay

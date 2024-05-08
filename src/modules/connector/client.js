@@ -1,6 +1,6 @@
 const { io } = require('socket.io-client')
-const random = require('../../random')
-const delay = require('../../delay')
+const random = require('../random')
+const delay = require('../delay')
 
 const defaultEventName = 'message'
 const defaultEventResponse = 'response'
