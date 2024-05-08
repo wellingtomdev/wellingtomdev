@@ -1,4 +1,4 @@
-const axios = require('axios')
+import  axios from 'axios'
 
 async function checkPortAvailability(port) {
     return await axios.get(`http://localhost:${port}`)
@@ -18,4 +18,4 @@ async function getAvailablePort(initPort = 3000, limit = 100) {
     }
 }
 
-module.exports = getAvailablePort
+export default getAvailablePort

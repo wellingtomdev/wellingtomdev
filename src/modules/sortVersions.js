@@ -55,4 +55,4 @@ function sortVersions(versions) {
     return formatNewList(versions, typeList, sorted)
 }
 
-module.exports = sortVersions
+export default sortVersions

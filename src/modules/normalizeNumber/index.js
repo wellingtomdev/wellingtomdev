@@ -26,4 +26,4 @@ function normalizeNumber(number, numberValidation = true) {
     return `55${number}`
 }
 
-module.exports = normalizeNumber
+export default normalizeNumber

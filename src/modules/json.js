@@ -15,7 +15,7 @@ function stringify(data) {
     }
 }
 
-module.exports = {
+export default {
     parse,
     stringify,
 }
