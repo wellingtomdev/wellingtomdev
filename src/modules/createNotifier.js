@@ -1,4 +1,4 @@
-import random from './random'
+const random = require('./random')
 
 function createNotifier() {
 
@@ -63,4 +63,4 @@ function createNotifier() {
 
 }
 
-export default createNotifier
+module.exports = createNotifier

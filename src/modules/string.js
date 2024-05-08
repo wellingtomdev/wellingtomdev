@@ -25,7 +25,7 @@ function sanitizeName(...str) {
     return lowerCase(onlyLettersAndNumbersAndUnderscore(removeAccents(completeString)))
 }
 
-export default {
+module.exports = {
     removeAccents,
     onlyLetters,
     onlyLettersAndNumbersAndUnderscore,

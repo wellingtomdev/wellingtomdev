@@ -1,4 +1,4 @@
-import random from './random'
+const random = require('./random')
 
 function createQueue({
     initStarted = true,
@@ -91,4 +91,4 @@ function createQueue({
 
 }
 
-export default createQueue
+module.exports = createQueue

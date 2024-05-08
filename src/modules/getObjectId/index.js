@@ -8,4 +8,4 @@ function getObjectId(object = {}) {
     return values.join('-')
 }
 
-export default getObjectId
+module.exports = getObjectId

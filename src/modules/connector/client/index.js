@@ -1,6 +1,6 @@
-import { io } from "socket.io-client"
-import random from "../../random"
-import delay from "../../delay"
+const { io } = require('socket.io-client')
+const random = require('../../random')
+const delay = require('../../delay')
 
 const defaultEventName = 'message'
 const defaultEventResponse = 'response'
@@ -103,6 +103,6 @@ function createClient({
 
 }
 
-export default {
+module.exports = {
     createClient,
 }

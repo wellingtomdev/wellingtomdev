@@ -91,7 +91,7 @@ function getToday(includeYear = true) {
     return normalizeString(today, false)
 }
 
-export default {
+module.exports = {
     onlyNumbers,
     normalizeString,
     normalizeYear,

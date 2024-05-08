@@ -1,5 +1,5 @@
-import { Server } from "socket.io"
-import http from "http"
+const { Server } = require("socket.io")
+const http = require("http")
 
 const connections = {}
 
@@ -99,7 +99,7 @@ function getConnectionByName(name) {
 
 
 
-export default {
+module.exports = {
     getSocketServer,
     createServer,
     getConnectionById,
