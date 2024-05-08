@@ -1,21 +1,33 @@
-const getAvailablePort = require('./modules/getAvailablePort')
-const createNotifier = require('./modules/createNotifier')
-const sortVersions = require('./modules/sortVersions')
-const getObjectId = require('./modules/getObjectId')
-const createQueue = require('./modules/createQueue')
-const connector = require('./modules/connector')
-const random = require('./modules/random')
-const delay = require('./modules/delay')
-const json = require('./modules/json')
+import _getAvailablePort from './modules/getAvailablePort'
+import _createNotifier from './modules/createNotifier'
+import _sortVersions from './modules/sortVersions'
+import _getObjectId from './modules/getObjectId'
+import _createQueue from './modules/createQueue'
+import _connector from './modules/connector'
+import _random from './modules/random'
+import _delay from './modules/delay'
+import _json from './modules/json'
 
-module.exports = {
-    getAvailablePort,
-    createNotifier,
-    sortVersions,
-    getObjectId,
-    createQueue,
-    connector,
-    random,
-    delay,
-    json
+const modules = {
+    getAvailablePort: _getAvailablePort,
+    createNotifier: _createNotifier,
+    sortVersions: _sortVersions,
+    getObjectId: _getObjectId,
+    createQueue: _createQueue,
+    connector: _connector,
+    random: _random,
+    delay: _delay,
+    json: _json
 }
+
+export const getAvailablePort = _getAvailablePort
+export const createNotifier = _createNotifier
+export const sortVersions = _sortVersions
+export const getObjectId = _getObjectId
+export const createQueue = _createQueue
+export const connector = _connector
+export const random = _random
+export const delay = _delay
+export const json = _json
+
+export default modules

@@ -1,12 +1,12 @@
 {
     "name": "wellingtomdev",
     "author": "Wellington Mesquita",
-    "version": "1.1.1",
+    "version": "1.1.4",
     "main": "src/index.js",
     "scripts": {
         "test": "vitest",
         "build": "tsc",
-        "pub": "npm run build && npm publish"
+        "preinstall": "npm run build"
     },
     "devDependencies": {
         "typescript": "^5.4.5",
@@ -21,7 +21,7 @@
         "socket.io-client": "^4.7.5"
     },
     "exports": {
-        "import": "./src/index.js",
+        "import": "./src/index.ts",
         "require": "./dist/index.js"
     }
 }
