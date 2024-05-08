@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import random from '../modules/random.js'
+import random from '../modules/random'
 
 describe('random', () => {
 

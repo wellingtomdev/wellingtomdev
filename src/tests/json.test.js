@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import json from '../modules/json.js'
+import json from '../modules/json'
 
 describe('json', () => {
 

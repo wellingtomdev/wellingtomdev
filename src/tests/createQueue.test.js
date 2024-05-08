@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import createQueue from '../modules/createQueue.js'
+import createQueue from '../modules/createQueue'
 
 describe('createQueue', () => {
 

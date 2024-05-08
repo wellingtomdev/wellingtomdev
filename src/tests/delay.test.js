@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import delay from '../modules/delay.js'
+import delay from '../modules/delay'
 
 describe('delay', () => {
 

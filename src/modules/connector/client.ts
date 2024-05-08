@@ -1,6 +1,6 @@
-const { io } = require('socket.io-client')
-const random = require('../random')
-const delay = require('../delay')
+import { io } from 'socket.io-client'
+import random from '../random'
+import delay from '../delay'
 
 const defaultEventName = 'message'
 const defaultEventResponse = 'response'
@@ -10,19 +10,26 @@ function createClient({
     url = "http://localhost:3000",
     name = "client",
     methods = {},
-    onError = error => error,
-    onDuplicated = error => error,
-}) {
+    onError = (error: any) => error,
+    onDuplicated = (error: any) => error,
+}: {
+    url?: string,
+    name?: string,
+    methods?: { [key: string]: (...args: any) => any },
+    onError?: (error: any) => any,
+    onDuplicated?: (error: any) => any,
+} = {
+    }) {
 
-    const state = { url }
+    const state: any = { url }
 
     const socket = io(url)
-    socket.on('setup', async (requires) => {
-        const payload = {}
+    socket.on('setup', async (requires: any) => {
+        const payload: any = {}
         if (requires.includes('name')) payload.name = name
         if (requires.includes('methods')) payload.methods = Object.keys(methods)
         try {
-            const response = await request('server', 'setup', payload)
+            const response: any = await request('server', 'setup', payload)
             if (response.name) state.name = response.name
             if (response.methods) state.methods = response.methods
         } catch (error) {
@@ -50,7 +57,7 @@ function createClient({
 
     function disconnect() { socket.disconnect() }
 
-    const requests = {}
+    const requests: any = {}
 
     function createId() {
         const id = random.string()
@@ -58,18 +65,18 @@ function createClient({
         return id
     }
 
-    async function emit(...args) {
+    async function emit(...args: any) {
         return socket.emit(defaultEventName, ...args)
     }
 
-    function request(targetName, call, ...args) {
+    function request(targetName: string, call: string, ...args: any) {
         const id = createId()
         const promise = new Promise((resolve, reject) => requests[id] = { resolve, reject })
         emit({ id, targetName, call, args })
         return promise
     }
 
-    async function onProcedure({ id, originId, call, args } = {}) {
+    async function onProcedure({ id, originId, call, args }: { id: string, originId: string, call: string, args: any }) {
         try {
             const method = methods[call]
             if (!method) throw new Error(`Method ${call} not found`)
@@ -80,7 +87,7 @@ function createClient({
         }
     }
 
-    function onResponse({ id, response, success, error } = {}) {
+    function onResponse({ id, response, success, error }: any = {}) {
         try {
             if (!requests[id]) return
             const { resolve, reject } = requests[id]
@@ -103,6 +110,6 @@ function createClient({
 
 }
 
-module.exports = {
+export default {
     createClient,
 }

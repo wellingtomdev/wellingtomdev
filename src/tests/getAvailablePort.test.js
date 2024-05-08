@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import getAvailablePort from '../modules/getAvailablePort.js'
+import getAvailablePort from '../modules/getAvailablePort'
 import { createServer } from 'http'
 
 function _createServer(port) {

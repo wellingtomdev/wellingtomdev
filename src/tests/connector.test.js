@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest'
-import socketServer from '../modules/connector/server.js'
-import socketClient from '../modules/connector/client.js'
-import delay from '../modules/delay.js'
+import socketServer from '../modules/connector/server'
+import socketClient from '../modules/connector/client'
+import delay from '../modules/delay'
 
 describe('socketServer', () => {
 

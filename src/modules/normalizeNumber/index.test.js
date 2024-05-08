@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import normalizedNumber from './index.js'
+import normalizedNumber from './index'
 
 describe('normalizedNumber', () => {
 

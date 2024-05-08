@@ -1,9 +1,9 @@
-const { Server } = require("socket.io")
-const http = require("http")
+import { Server } from "socket.io"
+import http from "http"
 
-const connections = {}
+const connections: { [key: string]: any } = {}
 
-function setup(originId, { name, methods } = {}) {
+function setup(originId: string, { name, methods }: { name: string, methods: any }) {
     const exists = getConnectionByName(name)
     const connection = getConnectionById(originId)
     if (exists) {
@@ -14,8 +14,8 @@ function setup(originId, { name, methods } = {}) {
     return connection.config
 }
 
-function internalExecution(name = 'internal', methods = {}) {
-    async function emit(event, { id, originId, call, args }) {
+function internalExecution(name = 'internal', methods: any = {}) {
+    async function emit(event: any, { id, originId, call, args }: { id: string, originId: string, call: string, args: any }) {
         try {
             const method = methods[call]
             const response = await method(originId, ...args)
@@ -32,15 +32,15 @@ function internalExecution(name = 'internal', methods = {}) {
 
 connections['server'] = internalExecution('server', { setup })
 
-function onMessage(socket, request = {}) {
+function onMessage(socket: any, request: any = {}) {
 
-    function emitError(messageError = 'Error', id = undefined) {
+    function emitError(messageError = 'Error', id?: string) {
         const error = { message: messageError }
         if (!id) throw error
         return socket.emit('response', { id, response: undefined, success: false, error })
     }
 
-    function callProcedure({ id, targetName, call, args } = {}) {
+    function callProcedure({ id, targetName, call, args }: { id: string, targetName: string, call: string, args: any }) {
         const connection = getConnectionByName(targetName)
         if (!connection) return emitError('Connection not found', id)
         const methods = connection.config?.methods || []
@@ -49,7 +49,7 @@ function onMessage(socket, request = {}) {
         connection.socket.emit('procedure', { id, originId, call, args })
     }
 
-    function callResponse({ id, originId, response, success, error } = {}) {
+    function callResponse({ id, originId, response, success, error }: { id: string, originId: string, response: any, success: boolean, error: any }) {
         const connection = getConnectionById(originId)
         if (!connection) return emitError('Connection not found')
         connection.socket.emit('response', { id, response, success, error })
@@ -62,24 +62,24 @@ function onMessage(socket, request = {}) {
 
 }
 
-function onConnection(socket) {
+function onConnection(socket: any) {
     const id = socket.id
     const connection = { id, socket, config: {}, }
     connections[id] = connection
     socket.on("disconnect", () => delete connections[id])
-    socket.on("message", (...args) => onMessage(socket, ...args))
+    socket.on("message", (...args: any) => onMessage(socket, ...args))
     socket.emit("setup", ['name', 'methods'])
     return socket
 }
 
 
-function getSocketServer(httpServer, options = {}) {
+function getSocketServer(httpServer: any, options = {}) {
     const io = new Server(httpServer, options)
     io.on("connection", onConnection)
     return io
 }
 
-async function createServer(port, options = {}) {
+async function createServer(port: number, options = {}) {
     return new Promise((resolve) => {
         const httpServer = http.createServer()
         httpServer.listen(port, () => {
@@ -89,17 +89,17 @@ async function createServer(port, options = {}) {
     })
 }
 
-function getConnectionById(id) {
+function getConnectionById(id: string) {
     return connections[id]
 }
 
-function getConnectionByName(name) {
+function getConnectionByName(name: string) {
     return Object.values(connections).find(connection => connection.config.name === name)
 }
 
 
 
-module.exports = {
+export default {
     getSocketServer,
     createServer,
     getConnectionById,

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import createNotifier from '../modules/createNotifier.js'
+import createNotifier from '../modules/createNotifier'
 
 describe('createNotifier', () => {
 

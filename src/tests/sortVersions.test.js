@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import sortVersions from '../modules/sortVersions.js'
+import sortVersions from '../modules/sortVersions'
 
 describe('sortVersions', () => {
 
