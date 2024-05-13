@@ -1,7 +1,8 @@
-import { Server } from "socket.io"
+import { Server, Socket } from "socket.io"
 import http from "http"
+import { ClientEmitProcedure, ClientEmitResponse, ServerEmitProcedure, ServerEmitResponse, ConnectionInServer } from "./types"
 
-const connections: { [key: string]: any } = {}
+const connections: { [key: string]: ConnectionInServer } = {}
 
 function setup(originId: string, { name, methods }: { name: string, methods: any }) {
     const exists = getConnectionByName(name)
@@ -14,60 +15,100 @@ function setup(originId: string, { name, methods }: { name: string, methods: any
     return connection.config
 }
 
-function internalExecution(name = 'internal', methods: any = {}) {
+function internalExecution(nameAndId = 'internal', methods: any = {}) {
     async function emit(event: any, { id, originId, call, args }: { id: string, originId: string, call: string, args: any }) {
         try {
             const method = methods[call]
             const response = await method(originId, ...args)
-            onMessage(null, { id, originId, response, success: true, error: undefined })
+            onMessage(fakeSocket, { id, originId, response, success: true, error: undefined })
         } catch (error) {
-            onMessage(null, { id, originId, response: undefined, success: false, error })
+            onMessage(fakeSocket, { id, originId, response: undefined, success: false, error })
         }
     }
+    const fakeSocket = { emit, id: nameAndId }
     return {
-        socket: { emit },
-        config: { name, methods: Object.keys(methods) }
+        id: nameAndId,
+        socket: fakeSocket,
+        config: { name: nameAndId, methods: Object.keys(methods) }
     }
 }
 
 connections['server'] = internalExecution('server', { setup })
 
-function onMessage(socket: any, request: any = {}) {
+function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
 
-    function emitError(messageError = 'Error', id?: string) {
-        const error = { message: messageError }
+    async function waitConnection({
+        originId = '',
+        targetName = ''
+    }: {
+        originId?: string,
+        targetName?: string
+    }, timeout = 5000): Promise<ConnectionInServer> {
+        function getConnection() {
+            return originId ? getConnectionById(originId) : getConnectionByName(targetName)
+        }
+        return new Promise((resolve, reject) => {
+            const interval = setInterval(() => {
+                const connection = getConnection()
+                if (!connection?.config) return
+                clearInterval(interval)
+                return resolve(connection)
+            }, 100)
+            setTimeout(() => {
+                clearInterval(interval)
+                reject('Connection not found')
+            }, timeout)
+        })
+    }
+
+    function emitError(messageError: string | { message: string } = 'Error', id?: string) {
+        const error = { message: typeof messageError != 'string' ? messageError.message : messageError }
         if (!id) throw error
         return socket.emit('response', { id, response: undefined, success: false, error })
     }
 
-    function callProcedure({ id, targetName, call, args }: { id: string, targetName: string, call: string, args: any }) {
-        const connection = getConnectionByName(targetName)
-        if (!connection) return emitError('Connection not found', id)
-        const methods = connection.config?.methods || []
-        if (!methods.includes(call)) return emitError('Method not found ' + call, id)
-        const originId = socket.id
-        connection.socket.emit('procedure', { id, originId, call, args })
+    async function callProcedure({ id, targetName, call, args }: ClientEmitProcedure) {
+        try {
+            const connection = await waitConnection({ targetName })
+            const methods = connection.config?.methods || []
+            if (!methods.includes(call)) throw `Method not found ${call}`
+            const originId = socket.id
+            const values: ServerEmitProcedure = { id, originId, call, args }
+            connection.socket.emit('procedure', values)
+        } catch (error: any) {
+            emitError(error, id)
+        }
     }
 
-    function callResponse({ id, originId, response, success, error }: { id: string, originId: string, response: any, success: boolean, error: any }) {
-        const connection = getConnectionById(originId)
-        if (!connection) return emitError('Connection not found')
-        connection.socket.emit('response', { id, response, success, error })
+    async function callResponse({ id, originId, response, success, error }: ClientEmitResponse) {
+        try {
+            const connection = getConnectionById(originId)
+            if (!connection) await waitConnection({ originId })
+            const values: ServerEmitResponse = { id, response, success, error }
+            connection.socket.emit('response', values)
+        } catch (error: any) {
+            emitError(error, id)
+        }
     }
 
-    const type = request?.targetName ? 'procedure' : 'response'
-    if (type === 'procedure') return callProcedure(request)
-    if (type === 'response') return callResponse(request)
-    return emitError('Invalid request')
+    function processRequest(request: any) {
+        if (socket.id != 'server') socket.emit('confirm', { id: request.id })
+        const type = request?.targetName ? 'procedure' : 'response'
+        if (type === 'procedure') return callProcedure(request)
+        if (type === 'response') return callResponse(request)
+        return emitError('Invalid request')
+    }
+
+    return requests.map((request: any) => processRequest(request))
 
 }
 
-function onConnection(socket: any) {
+function onConnection(socket: Socket) {
     const id = socket.id
     const connection = { id, socket, config: {}, }
     connections[id] = connection
     socket.on("disconnect", () => delete connections[id])
-    socket.on("message", (...args: any) => onMessage(socket, ...args))
+    socket.on("message", (...requests: any[]) => onMessage(socket, ...requests))
     socket.emit("setup", ['name', 'methods'])
     return socket
 }
@@ -94,7 +135,7 @@ function getConnectionById(id: string) {
 }
 
 function getConnectionByName(name: string) {
-    return Object.values(connections).find(connection => connection.config.name === name)
+    return Object.values(connections).find(connection => connection?.config?.name === name)
 }
 
 

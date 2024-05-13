@@ -1,4 +1,12 @@
-const random = require('./random')
+import random from './random'
+
+type Task = {
+    id: string,
+    callback: () => any,
+    resolve: (result: any) => void,
+    reject: (error: any) => void,
+    promise?: Promise<any>,
+}
 
 function createQueue({
     initStarted = true,
@@ -7,8 +15,8 @@ function createQueue({
         running: false,
         started: !!initStarted,
     }
-    const tasks = {}
-    const order = []
+    const tasks: { [key: string]: Task } = {}
+    const order: string[] = []
 
     function getStarted() {
         return state.started
@@ -27,7 +35,7 @@ function createQueue({
         const taskId = random.string()
         if (tasks[taskId]) return add(callback)
         order.push(taskId)
-        const task = {
+        const task: Task = {
             id: taskId,
             callback,
             resolve: () => { },
@@ -46,11 +54,11 @@ function createQueue({
         }
     }
 
-    function get(taskId) {
+    function get(taskId: string) {
         return tasks[taskId]
-    }  
+    }
 
-    function remove(taskId) {
+    function remove(taskId: string) {
         if (!tasks[taskId]) return false
         const index = order.indexOf(taskId)
         if (index >= 0) order.splice(index, 1)
@@ -65,6 +73,7 @@ function createQueue({
         while (order.length) {
             if (!state.started) break
             const taskId = order.shift()
+            if (!taskId) continue
             const task = tasks[taskId]
             try {
                 const result = await task.callback()
@@ -91,4 +100,4 @@ function createQueue({
 
 }
 
-module.exports = createQueue
+export default createQueue

@@ -5,10 +5,6 @@ import delay from '../modules/delay'
 
 describe('socketServer', () => {
 
-    test('Inicialização', () => {
-        expect(true).toBe(true)
-    })
-
     describe('createServer', () => {
 
         test('Métodos', () => {
@@ -17,7 +13,7 @@ describe('socketServer', () => {
         })
 
         test('createServer', async () => {
-            const server = await socketServer.createServer({ port: 3001 })
+            const server = await socketServer.createServer({ port: 3100 })
             expect(server).toBeDefined()
             expect(server).toHaveProperty('on')
             expect(server).toHaveProperty('emit')
@@ -27,7 +23,7 @@ describe('socketServer', () => {
     })
 
     async function createServerForTests(...events) {
-        const server = await socketServer.createServer({ port: 3001 })
+        const server = await socketServer.createServer({ port: 3100 })
         expect(server.engine.clientsCount).toBe(0)
         const messages = []
         events.forEach(event => server.on(event, (...args) => messages.push({ event, args })))
@@ -39,7 +35,7 @@ describe('socketServer', () => {
         test('Conecta a um socket', async () => {
             const { server, messages } = await createServerForTests('connection')
 
-            const client = socketClient.createClient({ url: `http://localhost:3001` })
+            const client = socketClient.createClient({ url: `http://localhost:3100` })
             await client.waitConnection()
             expect(messages.length).toBe(1)
             const [message] = messages
@@ -61,7 +57,7 @@ describe('socketServer', () => {
         test('Sem metodos', async () => {
             const { server } = await createServerForTests('message')
             const methods = {}
-            const client = socketClient.createClient({ url: `http://localhost:3001`, methods })
+            const client = socketClient.createClient({ url: `http://localhost:3100`, methods })
             await client.waitConnection()
 
             const targetName = 'client'
@@ -83,7 +79,7 @@ describe('socketServer', () => {
         test('Com metodos', async () => {
             const { server } = await createServerForTests('message')
             const methods = { test: async (payload) => ({ ...payload, test2: true }) }
-            const client = socketClient.createClient({ url: `http://localhost:3001`, methods })
+            const client = socketClient.createClient({ url: `http://localhost:3100`, methods })
             await client.waitConnection()
 
             const targetName = 'client'
@@ -117,7 +113,7 @@ describe('socketServer', () => {
 
             const methods = { multiplication, sum }
 
-            const serverUrl = `http://localhost:3001`
+            const serverUrl = `http://localhost:3100`
             const client1 = socketClient.createClient({ url: serverUrl, methods, name: 'client1' })
             const client2 = socketClient.createClient({ url: serverUrl, methods, name: 'client2' })
             const client3 = socketClient.createClient({ url: serverUrl, methods, name: 'client3' })
@@ -146,10 +142,10 @@ describe('socketServer', () => {
 
         test('Nomes iguais', async () => {
 
-            const { server } = await createServerForTests('message')
+            const { server } = await createServerForTests()
 
             const onDuplicated = vi.fn()
-            const serverUrl = `http://localhost:3001`
+            const serverUrl = `http://localhost:3100`
             const client1 = socketClient.createClient({ url: serverUrl, name: 'client', onDuplicated })
             const client2 = socketClient.createClient({ url: serverUrl, name: 'client', onDuplicated })
             const client3 = socketClient.createClient({ url: serverUrl, name: 'client', onDuplicated })
@@ -169,9 +165,9 @@ describe('socketServer', () => {
 
         test('Desconexão', async () => {
 
-            const { server } = await createServerForTests('message')
+            const { server } = await createServerForTests()
 
-            const serverUrl = `http://localhost:3001`
+            const serverUrl = `http://localhost:3100`
             const client1 = socketClient.createClient({ url: serverUrl })
             const client2 = socketClient.createClient({ url: serverUrl })
             const client3 = socketClient.createClient({ url: serverUrl })
@@ -180,7 +176,7 @@ describe('socketServer', () => {
 
             await Promise.all(clients.map(client => client.waitConnection()))
 
-            await delay(200)
+            await delay(150)
 
             expect(client1.isConnected()).toBe(true)
             expect(client2.isConnected()).toBe(false)
@@ -189,6 +185,72 @@ describe('socketServer', () => {
             server.close()
 
         })
+
+        test('server offline', async () => {
+
+            const methods1 = { call: vi.fn() }
+            const methods2 = { call: vi.fn() }
+
+            const serverUrl = `http://localhost:3100`
+            const client1 = socketClient.createClient({ url: serverUrl, methods: methods1, name: 'client1' })
+            const client2 = socketClient.createClient({ url: serverUrl, methods: methods2, name: 'client2' })
+
+            expect(client1.isConnected()).toBe(false)
+            expect(client2.isConnected()).toBe(false)
+
+            await delay(100)
+
+            expect(client1.isConnected()).toBe(false)
+            expect(client2.isConnected()).toBe(false)
+
+            const { server } = await createServerForTests()
+
+            await client1.waitConnection()
+            await client2.waitConnection()
+
+            expect(client1.isConnected()).toBe(true)
+            expect(client2.isConnected()).toBe(true)
+
+            const lastTime = Date.now()
+            await Promise.all([
+                client1.request('client2', 'call', true),
+                client1.request('client2', 'call', true),
+                client2.request('client1', 'call', true),
+            ])
+            const time = Date.now() - lastTime
+
+            expect(methods2.call).toHaveBeenCalledTimes(2)
+            expect(methods1.call).toHaveBeenCalledTimes(1)
+
+            server.close()
+
+            const request1 = client1.request('client2', 'call', 'reconect test')
+            const request2 = client2.request('client1', 'call', 'reconect test')
+
+            await delay(time * 2)
+
+            expect(methods2.call).toHaveBeenCalledTimes(2)
+            expect(methods1.call).toHaveBeenCalledTimes(1)
+
+            const { server: server2 } = await createServerForTests()
+
+            await client1.waitConnection()
+            await client2.waitConnection()
+
+            expect(methods2.call).toHaveBeenCalledTimes(2)
+            expect(methods1.call).toHaveBeenCalledTimes(1)
+
+            await request1
+            await request2
+
+            expect(methods2.call).toHaveBeenCalledTimes(3)
+            expect(methods1.call).toHaveBeenCalledTimes(2)
+
+            client1.disconnect()
+            client2.disconnect()
+            server2.close()
+
+        }, 10000)
 
     })
 

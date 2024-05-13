@@ -7,6 +7,6 @@ function string(length = 10, chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEF
     return result.join('')
 }
 
-module.exports = {
+export default {
     string,
 }
