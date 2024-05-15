@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import createNotifier from '../modules/createNotifier'
 
 describe('createNotifier', () => {
@@ -16,6 +16,24 @@ describe('createNotifier', () => {
             const id = notifier.subscribe()
             const result = notifier.exists(id)
             expect(result).toBe(true)
+        })
+
+        test('Deve retornar true se o listener existir no evento', () => {
+            const notifier = createNotifier()
+            const id = notifier.subscribe(() => { }, 'event-1')
+            const result1 = notifier.exists(id, 'default')
+            expect(result1).toBe(false)
+            const result2 = notifier.exists(id, 'event-1')
+            expect(result2).toBe(true)
+        })
+
+        test('Deve retornar true se o listener existir independente do evento', () => {
+            const notifier = createNotifier()
+            const id = notifier.subscribe(() => { }, 'event-1')
+            const result1 = notifier.exists(id, null)
+            expect(result1).toBe(true)
+            const result2 = notifier.exists(id, 'default')
+            expect(result2).toBe(false)
         })
 
     })
@@ -109,12 +127,28 @@ describe('createNotifier', () => {
 
         test('Deve chamar o método notify para cada listener', () => {
             const notifier = createNotifier()
-            let counter = 0
-            const listener = () => counter++
-            notifier.subscribe(listener)
-            notifier.subscribe(listener)
-            notifier.notifyAll()
-            expect(counter).toBe(2)
+            const fn = vi.fn()
+            notifier.subscribe(fn)
+            notifier.subscribe(fn)
+            notifier.notifyAll('data')
+            expect(fn).toHaveBeenCalledTimes(2)
+            expect(fn).toHaveBeenCalledWith('data', expect.any(String))
+        })
+
+        test('Deve chamar o método notify para cada listener de um evento', () => {
+            const notifier = createNotifier()
+            const fn1 = vi.fn()
+            const fn2 = vi.fn()
+            notifier.subscribe(fn1, 'event-1')
+            notifier.subscribe(fn1, 'event-1')
+            notifier.subscribe(fn2, 'event-2')
+            notifier.subscribe(fn2, 'event-2')
+            notifier.notifyAll(true, 'event-1')
+            expect(fn1).toHaveBeenCalledTimes(2)
+            expect(fn2).toHaveBeenCalledTimes(0)
+            notifier.notifyAll(true, 'event-2')
+            expect(fn1).toHaveBeenCalledTimes(2)
+            expect(fn2).toHaveBeenCalledTimes(2)
         })
 
         test('Deve retornar true', () => {
@@ -174,11 +208,39 @@ describe('createNotifier', () => {
 
     describe('unsubscribeAll', () => {
 
+        test('Deve remover todos os listeners de um evento', () => {
+            const notifier = createNotifier()
+            notifier.subscribe(() => { }, 'event-1')
+            notifier.subscribe(() => { }, 'event-2')
+            notifier.unsubscribeAll('event-1')
+            expect(notifier.count('event-1')).toBe(0)
+            expect(notifier.count('event-2')).toBe(1)
+            notifier.unsubscribeAll('event-2')
+            expect(notifier.count('event-2')).toBe(0)
+        })
+
         test('Deve remover todos os listeners', () => {
             const notifier = createNotifier()
-            notifier.subscribe()
-            notifier.subscribe()
+            notifier.subscribe(() => { }, 'event-1')
+            notifier.subscribe(() => { }, 'event-2')
+            expect(notifier.count('event-1')).toBe(1)
+            expect(notifier.count('event-2')).toBe(1)
+            notifier.unsubscribeAll(null)
+            expect(notifier.count('event-1')).toBe(0)
+            expect(notifier.count('event-2')).toBe(0)
+        })
+
+        test('Deve remover todos os listeners de default event', () => {
+            const notifier = createNotifier()
+            notifier.subscribe(() => { }, 'event-1')
+            notifier.subscribe(() => { }, 'event-2')
+            notifier.subscribe(() => { })
+            expect(notifier.count('event-1')).toBe(1)
+            expect(notifier.count('event-2')).toBe(1)
+            expect(notifier.count()).toBe(1)
             notifier.unsubscribeAll()
+            expect(notifier.count('event-1')).toBe(1)
+            expect(notifier.count('event-2')).toBe(1)
             expect(notifier.count()).toBe(0)
         })
 
@@ -196,6 +258,23 @@ describe('createNotifier', () => {
             notifier.subscribe()
             notifier.subscribe()
             expect(notifier.count()).toBe(2)
+        })
+        
+        test('Deve retornar a quantidade de listeners de um evento', () => {
+            const notifier = createNotifier()
+            notifier.subscribe(() => { }, 'event-1')
+            notifier.subscribe(() => { }, 'event-1')
+            notifier.subscribe(() => { }, 'event-2')
+            expect(notifier.count('event-1')).toBe(2)
+            expect(notifier.count('event-2')).toBe(1)
+        })
+
+        test('Deve retornar a quantidade de listeners total', () => {
+            const notifier = createNotifier()
+            notifier.subscribe(() => { }, 'event-1')
+            notifier.subscribe(() => { }, 'event-1')
+            notifier.subscribe(() => { }, 'event-2')
+            expect(notifier.count(null)).toBe(3)
         })
 
     })
