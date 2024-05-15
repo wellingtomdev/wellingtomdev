@@ -1,10 +1,12 @@
 const eventNames = {
+    setup: 'setup',
     message: 'message',
+    confirm: 'confirm',
     response: 'response',
     procedure: 'procedure',
-    confirm:  'confirm',
     disconnect: 'disconnect',
-    setup: 'setup',
+    connection: 'connection',
+    changeState: 'changeState',
 }
 
 export default eventNames

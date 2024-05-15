@@ -42,6 +42,7 @@ export type ConnectionInServer = {
     config?: {
         name?: string
         methods?: Array<string>
+        states?: { [key: string]: any }
     },
 }
 
