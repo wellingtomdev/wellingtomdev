@@ -13,7 +13,7 @@ function createInternalExecution(nameAndId = 'internal', methods: any = {}) {
     const fakeSocket = { emit, id: nameAndId }
     return {
         id: nameAndId,
-        socket: fakeSocket,
+        socket: fakeSocket as any,
         config: { name: nameAndId, methods: Object.keys(methods) }
     }
 }

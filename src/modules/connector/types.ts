@@ -1,3 +1,4 @@
+import { Socket } from "socket.io"
 
 export type Request = {
     resolve: Function,
@@ -38,7 +39,7 @@ export type ClientEmitResponse = {
 
 export type ConnectionInServer = {
     id: string,
-    socket: any,
+    socket: Socket,
     config?: {
         name?: string
         methods?: Array<string>

@@ -13,7 +13,7 @@ function onConnection(socket: Socket) {
     setConnection({ id, socket, config: {} })
     socket.on(eventName.disconnect, () => deleteConnection(id))
     socket.on(eventName.message, (...requests: any[]) => onMessage(socket, ...requests))
-    socket.emit(eventName.setup, ['name', 'methods'])
+    socket.emit(eventName.setup, ['name', 'methods', 'states', 'listeners'])
     return socket
 }
 

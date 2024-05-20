@@ -23,21 +23,47 @@ function createClient({
 } = {
     }) {
 
-    const nofitier = createNotifier()
-    const state: any = { url }
+    const statesNofitier = createNotifier()
+
+    const state: any = { url, states }
     const socket = io(url)
+    const listeners: string[] = []
+
+    let sinchronized = false
+    const connectionNotifier = createNotifier()
+    const sinchronizedEventName = 'sinchronized'
+    const unsinchronizedEventName = 'unsinchronized'
+    function isSinchronized() { return sinchronized === true }
+    function setSinchronized(value: boolean) {
+        sinchronized = value
+        const eventName = value ? sinchronizedEventName : unsinchronizedEventName
+        connectionNotifier.notifyAll(value, eventName)
+    }
+
+    function isWaintingSinchronization() {
+        return !isSinchronized()
+    }
+
+    async function waitSinchronization(emitReject: boolean = false): Promise<boolean> {
+        if (isSinchronized()) return true
+        return new Promise((resolve, reject) => {
+            const unsubscribe = () => {
+                connectionNotifier.unsubscribe(sinchronizedListenerId, unsinchronizedListenerId)
+                connectionNotifier.unsubscribe(unsinchronizedListenerId, sinchronizedListenerId)
+            }
+            const sinchronizedListenerId = connectionNotifier.subscribe(() => {
+                resolve(true)
+                unsubscribe()
+            }, sinchronizedEventName)
+            const unsinchronizedListenerId = connectionNotifier.subscribe(() => {
+                emitReject ? reject(false) : resolve(false)
+                unsubscribe()
+            }, unsinchronizedEventName)
+        })
+    }
 
     function getSocket() { return socket }
-
-    function isConnected() {
-        if (!state.name) return false
-        return socket.connected
-    }
-
-    function isWatingConnection() {
-        return !isConnected() && !state.methods
-    }
-
+    function isConnected() { return socket.connected }
     async function waitConnection(ms: number = 50) {
         while (!isConnected()) await delay(ms)
         return true
@@ -47,8 +73,14 @@ function createClient({
         socket.disconnect()
     }
 
+    function onDisconnect() {
+        setSinchronized(false)
+        state.name = undefined
+        state.methods = undefined
+    }
+
     async function emit(request: EmitRequestValues, isSetup: boolean = false) {
-        if (!isSetup && isWatingConnection()) await waitConnection(100)
+        if (!isSetup && isWaintingSinchronization()) await waitSinchronization()
         return socket.emit(eventName.message, request)
     }
 
@@ -69,14 +101,18 @@ function createClient({
     async function onSetup(requires: any) {
         const payload: any = {}
         if (requires.includes('name')) payload.name = name
-        if (requires.includes('states')) payload.states = states
+        if (requires.includes('states')) payload.states = state.states
         if (requires.includes('methods')) payload.methods = Object.keys(methods)
+        if (requires.includes('listeners')) payload.listeners = listeners
         try {
-            const response: any = await request('server', 'setup', payload)
-            if (response.name) state.name = response.name
-            if (response.states) state.states = response.states
-            if (response.methods) state.methods = response.methods
+            const { config, stateValues }: any = await request('server', 'setup', payload)
+            onChangeState(...stateValues)
+            if (config.name) state.name = config.name
+            if (config.states) state.states = config.states
+            if (config.methods) state.methods = config.methods
+            setSinchronized(true)
         } catch (error) {
+            setSinchronized(false)
             state.name = 'duplicated'
             if (error === 'Connection already exists') return onDuplicated(error)
             return onError(error)
@@ -85,11 +121,6 @@ function createClient({
 
     function onConfirm({ id }: { id: string }) {
         confirmRequest(id)
-    }
-
-    function onDisconnect() {
-        state.name = undefined
-        state.methods = undefined
     }
 
     async function onProcedure({ id, originId, call, args }: ServerEmitProcedure) {
@@ -114,8 +145,10 @@ function createClient({
         }
     }
 
-    async function onChageState({ tagData, value }: { tagData: string, value: any }) {
-        nofitier.notifyAll(value, tagData)
+    async function onChangeState(...states: { tagData: string, value: any }[]) {
+        states.map(({ tagData, value }) => {
+            statesNofitier.notifyAll(value, tagData)
+        })
     }
 
     async function setState(value: { [key: string]: any }): Promise<any> {
@@ -135,9 +168,12 @@ function createClient({
 
     async function listenState(targetName: string, key: string, callback = () => { }) {
         const tagData = getTagData(targetName, key)
-        const isRegistered = nofitier.count(tagData)
-        const listenerId = nofitier.subscribe(callback, tagData)
-        if (!isRegistered) await request('server', 'listenState', targetName, key)
+        const isRegistered = statesNofitier.count(tagData)
+        const listenerId = statesNofitier.subscribe(callback, tagData)
+        if (!isRegistered) {
+            await request('server', 'listenState', tagData)
+            listeners.push(tagData)
+        }
         return listenerId
     }
 
@@ -147,7 +183,7 @@ function createClient({
     socket.on(eventName.disconnect, onDisconnect)
     socket.on(eventName.procedure, onProcedure)
     socket.on(eventName.response, onResponse)
-    socket.on(eventName.changeState, onChageState)
+    socket.on(eventName.changeState, onChangeState)
 
     return {
         emit,
@@ -160,6 +196,9 @@ function createClient({
         getRequest,
         isConnected,
         waitConnection,
+        isSinchronized,
+        waitSinchronization,
+        isWaintingSinchronization,
         disconnect,
     }
 
