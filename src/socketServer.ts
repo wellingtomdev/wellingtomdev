@@ -1,2 +1,3 @@
 import socketServer from './modules/connector/server'
-export default socketServer
+export const createServer = socketServer.createServer
+export const getSocketServer = socketServer.getSocketServer
