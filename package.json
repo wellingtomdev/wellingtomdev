@@ -1,11 +1,13 @@
 {
     "name": "wellingtomdev",
     "author": "Wellington Mesquita",
-    "version": "1.1.9",
+    "version": "1.2.0",
     "main": "src/index.js",
     "scripts": {
         "test": "vitest",
-        "build": "tsc",
+        "build:node": "tsc --module commonjs --outDir dist/node",
+        "build:browser": "tsc --module esnext --outDir dist/browser",
+        "build": "npm run build:node && npm run build:browser",
         "preinstall": "npm run build"
     },
     "devDependencies": {
@@ -21,7 +23,7 @@
         "socket.io-client": "^4.7.5"
     },
     "exports": {
-        "import": "./src/index.ts",
-        "require": "./dist/index.js"
+        "import": "./dist/browser/index.js",
+        "require": "./dist/node/index.js"
     }
 }
