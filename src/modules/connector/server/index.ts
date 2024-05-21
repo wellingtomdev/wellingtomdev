@@ -1,4 +1,3 @@
-import http from "http"
 import { Server, Socket } from "socket.io"
 import { deleteConnection, setConnection } from "./connections"
 import createInternalExecution from "./createInternalExecution"
@@ -25,6 +24,7 @@ function getSocketServer(httpServer: any, options = {}) {
 }
 
 async function createServer(port: number, options = {}) {
+    const http = await import('http')
     return new Promise((resolve) => {
         const httpServer = http.createServer()
         httpServer.listen(port, () => {

@@ -1,7 +1,7 @@
 {
     "name": "wellingtomdev",
     "author": "Wellington Mesquita",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "main": "src/index.js",
     "scripts": {
         "test": "vitest",

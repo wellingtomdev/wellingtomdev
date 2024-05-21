@@ -579,11 +579,11 @@ describe('socketServer', () => {
             const callback1 = value => { receivedValue1 = value; fn1() }
             const callback2 = value => { receivedValue2 = value; fn2() }
             const callback3 = value => { receivedValue3 = value; fn3() }
-            const client1 = socketClient.createClient({ url: `http://localhost:3100`, name: 'client-listen-1' })
-            const client2 = socketClient.createClient({ url: `http://localhost:3100`, name: 'client-listen-2' })
+            const client1 = socketClient.createClient({ url: `http://localhost:3102`, name: 'client-listen-1' })
+            const client2 = socketClient.createClient({ url: `http://localhost:3102`, name: 'client-listen-2' })
 
             test('Estágio 1', async () => {
-                const { server } = await createServerForTests('message')
+                const { server } = await createServerForTests(3102, 'message')
                 try {
                     await client1.waitSinchronization()
                     await client2.waitSinchronization()
@@ -628,7 +628,7 @@ describe('socketServer', () => {
 
 
             test('Estágio 2', async () => {
-                const { server: server2 } = await createServerForTests('message')
+                const { server: server2 } = await createServerForTests(3102, 'message')
 
                 try {
                     await client1.waitSinchronization()
@@ -678,7 +678,7 @@ describe('socketServer', () => {
 
 
             test('Estágio 3', async () => {
-                const { server: server3 } = await createServerForTests('message')
+                const { server: server3 } = await createServerForTests(3102, 'message')
 
                 try {
                     await client1.waitSinchronization()
