@@ -1,3 +1,4 @@
+import { Socket } from "socket.io"
 import eventNames from "../eventNames"
 import { ClientEmitProcedure, ClientEmitResponse, ConnectionInServer, ServerEmitProcedure, ServerEmitResponse } from "../types"
 import { getConnectionById, getConnectionByName } from "./connections"
@@ -11,7 +12,7 @@ function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
     }: {
         originId?: string,
         targetName?: string
-    }, timeout = 5000): Promise<ConnectionInServer> {
+    }, timeout = 5000): Promise<ConnectionInServer<Socket>> {
         function getConnection() {
             return originId ? getConnectionById(originId) : getConnectionByName(targetName)
         }

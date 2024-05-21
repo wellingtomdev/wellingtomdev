@@ -1,8 +1,9 @@
+import { Socket } from "socket.io"
 import { ConnectionInServer } from "../types"
 
-const connections: { [key: string]: ConnectionInServer } = {}
+const connections: { [key: string]: ConnectionInServer<Socket> } = {}
 
-export function setConnection(connection: ConnectionInServer) {
+export function setConnection(connection: ConnectionInServer<Socket>) {
     const id = connection.id
     connections[id] = connection
 }

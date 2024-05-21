@@ -18,7 +18,7 @@ function onConnection(socket: Socket) {
 
 
 function getSocketServer(httpServer: any, options = {}) {
-    const io = new Server(httpServer, options)
+    const io = new Server(httpServer, { cors: { origin: '*', }, ...options })
     io.on(eventName.connection, onConnection)
     return io
 }

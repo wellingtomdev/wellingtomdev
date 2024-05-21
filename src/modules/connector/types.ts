@@ -1,4 +1,3 @@
-import { Socket } from "socket.io"
 
 export type Request = {
     resolve: Function,
@@ -37,15 +36,14 @@ export type ClientEmitResponse = {
     error: any,
 }
 
-export type ConnectionInServer = {
+export type ConnectionInServer<SocketType> = {
     id: string,
-    socket: Socket,
+    socket: SocketType,
     config?: {
         name?: string
         methods?: Array<string>
         states?: { [key: string]: any }
     },
 }
-
 
 export type EmitRequestValues = ClientEmitProcedure | ClientEmitResponse
