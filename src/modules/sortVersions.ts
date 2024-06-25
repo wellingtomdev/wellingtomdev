@@ -66,11 +66,16 @@ export function formatNewList(versions: VersionsList, typeList = 'empty', sorted
     return []
 }
 
-export function sortVersions(versions: VersionsList[]) {
+export function sortVersions(versions: VersionsList) {
     const typeList = getTypeList(versions)
     const tagVersions = getTagVersions(versions, typeList)
     const sorted = sort(tagVersions)
     return formatNewList(versions, typeList, sorted)
 }
+
+export function getLatestVersion(versions: VersionsList) {
+    const sorted = sortVersions(versions)
+    return sorted[sorted.length - 1]
+}   
 
 export default sortVersions
