@@ -49,7 +49,7 @@ export function getTagVersions(versions: VersionsList, typeList = 'empty') {
     if (typeList == 'array') return (versions || []).map((version: { version: VersionTag }) => version.version)
 }
 
-export function formatNewList(versions: VersionsList, typeList = 'empty', sortedTags: VersionTag[]) {
+export function formatNewList(versions: VersionsList, typeList = 'empty', sortedTags: VersionTag[]): VersionStringArray | VersionObjectArray {
     if (typeList == 'empty') return []
     if (typeList == 'string') return sortedTags
     if (typeList == 'object') {
@@ -63,9 +63,10 @@ export function formatNewList(versions: VersionsList, typeList = 'empty', sorted
             return _versions[index]
         })
     }
+    return []
 }
 
-export function sortVersions(versions: string[]) {
+export function sortVersions(versions: VersionsList[]) {
     const typeList = getTypeList(versions)
     const tagVersions = getTagVersions(versions, typeList)
     const sorted = sort(tagVersions)
