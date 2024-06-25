@@ -78,4 +78,14 @@ export function getLatestVersion(versions: VersionsList) {
     return sorted[sorted.length - 1]
 }   
 
-export default sortVersions
+export default {
+    sort,
+    getTypeList,
+    sortVersions,
+    getLongNumber,
+    formatNewList,
+    getSplitLength,
+    getTagVersions,
+    getLatestVersion,
+    getMaxSplitLength,
+}

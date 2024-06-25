@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest'
-import sortVersions, { getLatestVersion, getTypeList } from '../modules/sortVersions'
+import versions from '../modules/versions'
+const { sortVersions, getLatestVersion, getTypeList } = versions
 
 describe('sortVersions', () => {
 
