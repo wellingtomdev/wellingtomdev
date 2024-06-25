@@ -1,7 +1,7 @@
 {
     "name": "wellingtomdev",
     "author": "Wellington Mesquita",
-    "version": "1.3.2",
+    "version": "1.3.3",
     "main": "./dist/node/index.js",
     "keywords": [],
     "license": "ISC",
@@ -16,7 +16,8 @@
         "test": "vitest",
         "build:node": "tsc --module commonjs --outDir dist/node",
         "build:browser": "tsc --module esnext --outDir dist/browser",
-        "build": "npm run build:node && npm run build:browser"
+        "build": "npm run build:node && npm run build:browser",
+        "build_publish": "npm run build && npm publish"
     },
     "devDependencies": {
         "vitest": "^1.5.2"

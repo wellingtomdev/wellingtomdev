@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import sortVersions from '../modules/sortVersions'
+import sortVersions, { getTypeList } from '../modules/sortVersions'
 
 describe('sortVersions', () => {
 
@@ -56,6 +56,55 @@ describe('sortVersions', () => {
             { "version": "0.4.7" },
             { "version": "0.4.8" }
         ])
+    })
+
+})
+
+describe('getTypeList', ()=>{
+   
+    test('empty', () => {
+        const versions = []
+        expect(getTypeList(versions)).toEqual('empty')
+    })
+
+    test('object empty', () => {
+        const versions = {}
+        expect(getTypeList(versions)).toEqual('empty')
+    })
+
+    test('object', () => {
+        const versions = {
+            "0.4.8": { "version": "0.4.8" },
+            "0.4.5": { "version": "0.4.5" },
+            "0.4.7": { "version": "0.4.7" },
+            "0.4.6": { "version": "0.4.6" }
+        }
+        expect(getTypeList(versions)).toEqual('object')
+    })
+
+    test('array', () => {
+        const versions = [
+            { "version": "0.4.8" },
+            { "version": "0.4.5" },
+            { "version": "0.4.7" },
+            { "version": "0.4.6" }
+        ]
+        expect(getTypeList(versions)).toEqual('array')
+    })
+
+    test('string', () => {
+        const versions = ['1.0.1', '1.0.0', '2.3.9', '2.3.10', '0.7.23' ]
+        expect(getTypeList(versions)).toEqual('string')
+    })
+
+    test('undefined', () => {
+        const versions = undefined
+        expect(getTypeList(versions)).toEqual('empty')
+    })
+
+    test('null', () => {
+        const versions = null
+        expect(getTypeList(versions)).toEqual('empty')
     })
 
 })
