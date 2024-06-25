@@ -78,14 +78,31 @@ export function getLatestVersion(versions: VersionsList) {
     return sorted[sorted.length - 1]
 }   
 
+export function getVersionKey(longNumber: number) {
+    if (typeof longNumber != 'number') throw new Error('longNumber is not a number')
+    if (!longNumber) return '0.0.0'
+    const stringNumber = `${longNumber}`.padStart(9, '0')
+    const numbers = stringNumber.match(/.{1,3}/g) || []
+    const versionKey = numbers.map(Number).join('.')
+    return versionKey
+}
+
+export function sanitizeVersionKey(versionKey: VersionTag) {
+    if (!versionKey) return null
+    const longNumber = getLongNumber(versionKey)
+    return getVersionKey(longNumber)
+}
+
 export default {
     sort,
     getTypeList,
     sortVersions,
     getLongNumber,
     formatNewList,
+    getVersionKey,
     getSplitLength,
     getTagVersions,
+    sanitizeVersionKey,
     getLatestVersion,
     getMaxSplitLength,
 }

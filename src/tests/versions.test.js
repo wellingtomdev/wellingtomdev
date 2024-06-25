@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import versions from '../modules/versions'
-const { sortVersions, getLatestVersion, getTypeList } = versions
+const { sortVersions, getLatestVersion, getTypeList, sanitizeVersionKey } = versions
 
 describe('sortVersions', () => {
 
@@ -61,8 +61,8 @@ describe('sortVersions', () => {
 
 })
 
-describe('getTypeList', ()=>{
-   
+describe('getTypeList', () => {
+
     test('empty', () => {
         const versions = []
         expect(getTypeList(versions)).toEqual('empty')
@@ -94,7 +94,7 @@ describe('getTypeList', ()=>{
     })
 
     test('string', () => {
-        const versions = ['1.0.1', '1.0.0', '2.3.9', '2.3.10', '0.7.23' ]
+        const versions = ['1.0.1', '1.0.0', '2.3.9', '2.3.10', '0.7.23']
         expect(getTypeList(versions)).toEqual('string')
     })
 
@@ -110,7 +110,7 @@ describe('getTypeList', ()=>{
 
 })
 
-describe('getLatestVersion', ()=>{
+describe('getLatestVersion', () => {
 
     test('empty', () => {
         const versions = []
@@ -143,7 +143,7 @@ describe('getLatestVersion', ()=>{
     })
 
     test('string', () => {
-        const versions = ['1.0.1', '1.0.0', '2.3.9', '2.3.10', '0.7.23' ]
+        const versions = ['1.0.1', '1.0.0', '2.3.9', '2.3.10', '0.7.23']
         expect(getLatestVersion(versions)).toEqual('2.3.10')
     })
 
@@ -156,5 +156,38 @@ describe('getLatestVersion', ()=>{
         const versions = null
         expect(getLatestVersion(versions)).toEqual(undefined)
     })
-    
+
+})
+
+describe('sanitizeVersionKey', () => {
+
+    test('empty', () => {
+        expect(sanitizeVersionKey('')).toEqual(null)
+    })
+
+    test('undefined', () => {
+        expect(sanitizeVersionKey(undefined)).toEqual(null)
+    })
+
+    test('null', () => {
+        expect(sanitizeVersionKey(null)).toEqual(null)
+    })
+
+    test('string', () => {
+        expect(sanitizeVersionKey('1.0.1')).toEqual('1.0.1')
+        expect(sanitizeVersionKey('001.0.1')).toEqual('1.0.1')
+        expect(sanitizeVersionKey('1.00.1')).toEqual('1.0.1')
+        expect(sanitizeVersionKey('1.00.190')).toEqual('1.0.190')
+        expect(sanitizeVersionKey('1.030.1')).toEqual('1.30.1')
+    })
+
+    test('number', () => {
+        try {
+            sanitizeVersionKey(100)
+            expect(false).toEqual(true)
+        } catch (error) {
+            expect(true).toEqual(true)
+        }
+    })
+
 })
