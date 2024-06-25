@@ -16,8 +16,7 @@
         "test": "vitest",
         "build:node": "tsc --module commonjs --outDir dist/node",
         "build:browser": "tsc --module esnext --outDir dist/browser",
-        "build": "npm run build:node && npm run build:browser",
-        "build_publish": "npm run build && npm publish"
+        "build": "npm run build:node && npm run build:browser"
     },
     "devDependencies": {
         "vitest": "^1.5.2"
