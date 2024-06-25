@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import sortVersions, { getTypeList } from '../modules/sortVersions'
+import sortVersions, { getLatestVersion, getTypeList } from '../modules/sortVersions'
 
 describe('sortVersions', () => {
 
@@ -107,4 +107,53 @@ describe('getTypeList', ()=>{
         expect(getTypeList(versions)).toEqual('empty')
     })
 
+})
+
+describe('getLatestVersion', ()=>{
+
+    test('empty', () => {
+        const versions = []
+        expect(getLatestVersion(versions)).toEqual(undefined)
+    })
+
+    test('object empty', () => {
+        const versions = {}
+        expect(getLatestVersion(versions)).toEqual(undefined)
+    })
+
+    test('object', () => {
+        const versions = {
+            "0.4.8": { "version": "0.4.8" },
+            "0.4.5": { "version": "0.4.5" },
+            "0.4.7": { "version": "0.4.7" },
+            "0.4.6": { "version": "0.4.6" }
+        }
+        expect(getLatestVersion(versions)).toEqual({ "version": "0.4.8" })
+    })
+
+    test('array', () => {
+        const versions = [
+            { "version": "0.4.8" },
+            { "version": "0.4.5" },
+            { "version": "0.4.7" },
+            { "version": "0.4.6" }
+        ]
+        expect(getLatestVersion(versions)).toEqual({ "version": "0.4.8" })
+    })
+
+    test('string', () => {
+        const versions = ['1.0.1', '1.0.0', '2.3.9', '2.3.10', '0.7.23' ]
+        expect(getLatestVersion(versions)).toEqual('2.3.10')
+    })
+
+    test('undefined', () => {
+        const versions = undefined
+        expect(getLatestVersion(versions)).toEqual(undefined)
+    })
+
+    test('null', () => {
+        const versions = null
+        expect(getLatestVersion(versions)).toEqual(undefined)
+    })
+    
 })
