@@ -9,7 +9,7 @@ export type VersionsList = VersionStringArray | VersionObjectArray | VersionObje
 
 
 export function getLongNumber(version: VersionTag, totalLength = pad) {
-    const splited = version.split('.')
+    const splited = version.trim().split('.')
     const mapped = splited.map((number) => number.padStart(pad, '0'))
     return +mapped.join('').padEnd(totalLength, '0')
 }
