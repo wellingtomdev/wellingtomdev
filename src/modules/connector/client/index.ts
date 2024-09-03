@@ -166,7 +166,7 @@ function createClient({
         return states[key]
     }
 
-    async function listenState(targetName: string, key: string, callback: (...values: any) => any) {
+    async function listenState(targetName: string, key: string, callback: (value: any, tagData: string) => any) {
         const tagData = getTagData(targetName, key)
         const isRegistered = statesNofitier.count(tagData)
         const listenerId = statesNofitier.subscribe(callback, tagData)

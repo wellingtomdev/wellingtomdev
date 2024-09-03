@@ -18,7 +18,7 @@ function createNotifier() {
         return subscriberId
     }
 
-    function subscribe(listener = () => { }, eventName = 'default'): ListenerIdType {
+    function subscribe(listener: (...args: any[]) => any = () => { }, eventName = 'default'): ListenerIdType {
         if (typeof listener != 'function') throw new Error('Listener must be a function')
         const listenerId = createSubscriberId()
         if (eventSubscribers[eventName] == undefined) eventSubscribers[eventName] = {}
