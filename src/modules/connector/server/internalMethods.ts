@@ -1,7 +1,10 @@
+import { Socket } from "socket.io"
 import delay from "../../delay"
 import eventNames from "../eventNames"
 import getTagData from "../getTagData"
+import { SetupValues } from "../types"
 import { getConnectionById, getConnectionByName } from "./connections"
+import { getServerOptions } from "./serverOptions"
 
 const states: {
     [clientName: string]: {
@@ -15,12 +18,20 @@ const listeners: {
     }
 } = {}
 
-function emitState(listener: string, ...states: { tagData: string, value: any }[]) {
-    const connection = getConnectionByName(listener)
+function emitStateById(clientId: string, ...states: { tagData: string, value: any }[]) {
+    const connection = getConnectionById(clientId)
     if (!connection) return false
     connection.socket.emit(eventNames.changeState, ...states)
     return true
 }
+
+function emitStateByName(clientName: string, ...states: { tagData: string, value: any }[]) {
+    const connections = getConnectionByName(clientName)
+    if (!connections.length) return false
+    connections.map(({ id }) => emitStateById(id, ...states))
+    return true
+}
+
 
 function getKeyAnValue(simpleObject: { [key: string]: any }) {
     const key = Object.keys(simpleObject)[0]
@@ -29,23 +40,23 @@ function getKeyAnValue(simpleObject: { [key: string]: any }) {
 }
 
 function notifyChangeState(clientName: string, newStates: { [key: string]: any }) {
-    const emitValues: { [listener: string]: { tagData: string, value: any }[] } = {}
+    const emitValues: { [clientId: string]: { tagData: string, value: any }[] } = {}
     const clientListeners = listeners[clientName]
     if (!clientListeners) return
-    Object.keys(newStates).map((key) => {
-        const value = newStates[key]
-        if (!clientListeners[key]) return
-        const tagData = getTagData(clientName, key)
-        clientListeners[key] = clientListeners[key].filter(listener => {
-            if (!getConnectionByName(listener)) return false
-            if (!emitValues[listener]) emitValues[listener] = []
-            emitValues[listener].push({ tagData, value })
+    Object.keys(newStates).map((stateName) => {
+        const value = newStates[stateName]
+        if (!clientListeners[stateName]) return
+        const tagData = getTagData(clientName, stateName)
+        clientListeners[stateName] = clientListeners[stateName].filter(clientId => {
+            if (!getConnectionById(clientId)) return false
+            if (!emitValues[clientId]) emitValues[clientId] = []
+            emitValues[clientId].push({ tagData, value })
             return true
         })
     })
-    Object.keys(emitValues).map(listener => {
-        const states = (emitValues[listener] || [])
-        emitState(listener, ...states)
+    Object.keys(emitValues).map(clientId => {
+        const states = (emitValues[clientId] || [])
+        emitStateById(clientId, ...states)
     })
     return delay(100)
 }
@@ -61,16 +72,31 @@ function getStatesByListener(...listenerNames: string[]) {
     }, [] as { tagData: string, value: any }[])
 }
 
-type SetupValues = { name: string, methods: string[], states: { [key: string]: any }, listeners: string[] }
+function getPortInSocket(socket: Socket) {
+    const host = socket.handshake.headers.host
+    const port = host?.split(':')[1]
+    return parseInt(port || '3100')
+}
+
 async function setup(originId: string, { name, methods = [], states = {}, listeners = [] }: SetupValues) {
-    const exists = getConnectionByName(name)
     const connection = getConnectionById(originId)
-    if (exists) {
-        setTimeout(() => connection.socket.disconnect(), 100)
-        throw 'Connection already exists'
+    const serverOptions = getServerOptions(getPortInSocket(connection.socket))
+    const exists = getConnectionByName(name)
+    if (exists.length) {
+        if (serverOptions.rules) {
+            const rule = serverOptions.rules[name]
+            if (rule && !rule.allowMultiple) {
+                setTimeout(() => connection.socket.disconnect(), 100)
+                throw 'Connection already exists'
+            }
+        } else {
+            setTimeout(() => connection.socket.disconnect(), 100)
+            throw 'Connection already exists'
+        }
     }
     const config = { name, methods, states }
     connection.config = config
+    setState(originId, states)
     const stateValues = getStatesByListener(...listeners)
     return {
         config,
@@ -94,7 +120,9 @@ function getClientNameByClientId(clientId: string) {
     return clientName
 }
 
-function getState(originId: string, clientId: string, key: string) {
+function getState(clientId?: string, key?: string) {
+    if (!clientId) throw 'Client id is required'
+    if (!key) throw 'Key is required'
     const clientName = getClientNameByClientId(clientId)
     return getStateByClientName(clientName, key)
 }
@@ -106,24 +134,24 @@ function getStateByClientName(clientName: string, key: string) {
 }
 
 function listenState(originId: string, tagData: string) {
-    const [targetName, key] = tagData.split(':')
+    const [targetName, propName] = tagData.split(':')
     if (!targetName) throw 'Target name is required'
     if (!listeners[targetName]) listeners[targetName] = {}
     const clientName = getClientNameByClientId(originId)
     if (!clientName) throw 'Client not found'
-    if (!listeners[targetName][key]) listeners[targetName][key] = []
-    listeners[targetName][key].push(clientName)
-    const value = getStateByClientName(targetName, key)
-    emitState(clientName, { tagData, value })
+    if (!listeners[targetName][propName]) listeners[targetName][propName] = []
+    listeners[targetName][propName].push(originId)
+    const state = getStateByClientName(targetName, propName)
+    emitStateById(originId, { tagData, value: state })
     if (!states[clientName]) return undefined
-    return states[clientName][key]
+    return states[clientName][propName]
 }
 
 export function _clearAllStates() {
     Object.keys(states).map(clientName => {
         Object.keys(states[clientName]).map(key => {
             const tagData = getTagData(clientName, key)
-            emitState(clientName, { tagData, value: undefined })
+            emitStateByName(clientName, { tagData, value: undefined })
         })
     })
 }

@@ -105,12 +105,13 @@ describe('createNotifier', () => {
             expect(result).toBe('Hello data')
         })
 
-        test('Deve retornar o listenerId', async () => {
+        test('Deve retornar o eventName', async () => {
             const notifier = createNotifier()
-            const listener = (data, listenerId) => listenerId
-            const id = notifier.subscribe(listener)
-            const result = await notifier.notify(id, 'data')
-            expect(result).toBe(id)
+            const listener = (data, eventName) => eventName
+            const name = 'event-1'
+            const id = notifier.subscribe(listener, name)
+            const result = await notifier.notify(id, 'data', true, name)
+            expect(result).toBe(name)
         })
 
         test('Deve retornar undefined se o listener lançar um erro', async () => {

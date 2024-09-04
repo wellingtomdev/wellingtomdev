@@ -4,6 +4,8 @@ import createInternalExecution from "./createInternalExecution"
 import internalMethods from "./internalMethods"
 import onMessage from "./onMessage"
 import eventName from "../eventNames"
+import { ServerOptionsT } from "../types"
+import { setServerOptions } from "./serverOptions"
 
 setConnection(createInternalExecution('server', internalMethods))
 
@@ -16,19 +18,19 @@ function onConnection(socket: Socket) {
     return socket
 }
 
-
-function getSocketServer(httpServer: any, options = {}) {
-    const io = new Server(httpServer, { cors: { origin: '*', }, ...options })
+function getSocketServer(httpServer: any) {
+    const io = new Server(httpServer, { cors: { origin: '*', } })
     io.on(eventName.connection, onConnection)
     return io
 }
 
-async function createServer(port: number, options = {}) {
+async function createServer(port: number, options: ServerOptionsT = {}): Promise<Server> {
     const http = await import('http')
     return new Promise((resolve) => {
         const httpServer = http.createServer()
         httpServer.listen(port, () => {
-            const socketServer = getSocketServer(httpServer, options)
+            const socketServer = getSocketServer(httpServer)
+            setServerOptions(port, options)
             resolve(socketServer)
         })
     })

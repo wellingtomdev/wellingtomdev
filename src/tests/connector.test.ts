@@ -15,7 +15,7 @@ describe('socketServer', () => {
         })
 
         test('createServer', async () => {
-            const server = await socketServer.createServer({ port: 3100 })
+            const server = await socketServer.createServer(3100)
             try {
                 expect(server).toBeDefined()
                 expect(server).toHaveProperty('on')
@@ -29,13 +29,13 @@ describe('socketServer', () => {
 
     })
 
-    async function createServerForTests(...events) {
+    async function createServerForTests(...events: any[]) {
         let port = 3100
         if (typeof events[0] == 'number') port = events.shift()
-        const server = await socketServer.createServer({ port })
+        const server = await socketServer.createServer(port)
         expect(server.engine.clientsCount).toBe(0)
-        const messages = []
-        events.forEach(event => server.on(event, (...args) => messages.push({ event, args })))
+        const messages: { event: string, args: any[] }[] = []
+        events.forEach(event => server.on(event, (...args: any[]) => messages.push({ event, args })))
         return { server, messages, port }
     }
 
@@ -80,7 +80,7 @@ describe('socketServer', () => {
                 try {
                     const result = await client.request(targetName, call, payload)
                     expect(result).toBeUndefined()
-                } catch (error) {
+                } catch (error: any) {
                     expect(error).toBeDefined()
                     expect(error.message).toBe('Method not found test')
                 }
@@ -98,7 +98,7 @@ describe('socketServer', () => {
             const { server } = await createServerForTests('message')
 
             try {
-                const methods = { test: async (payload) => ({ ...payload, test2: true }) }
+                const methods = { test: async (payload: any) => ({ ...payload, test2: true }) }
                 const client = socketClient.createClient({ url: `http://localhost:3100`, methods })
                 await client.waitSinchronization()
 
@@ -138,7 +138,7 @@ describe('socketServer', () => {
 
             test('valor incorreto', async () => {
 
-                async function setState(value) {
+                async function setState(value?: any) {
                     const client = socketClient.createClient({ url: `http://localhost:3100`, name: random.string() })
                     try {
                         await client.setState(value)
@@ -255,14 +255,14 @@ describe('socketServer', () => {
                     const result = client.getState()
                     expect(result).toEqual({ test: true })
                     const clientId = client.getSocket().id
-                    expect(internalMethods.getState(false, clientId, 'test')).toEqual(true)
-                    expect(internalMethods.getState(false, clientId, 'test2')).toEqual(undefined)
+                    expect(internalMethods.getState(clientId, 'test')).toEqual(true)
+                    expect(internalMethods.getState(clientId, 'test2')).toEqual(undefined)
                     await client.setState({ test: 'false', test2: true })
-                    expect(internalMethods.getState(false, clientId, 'test')).toEqual('false')
-                    expect(internalMethods.getState(false, clientId, 'test2')).toEqual(true)
+                    expect(internalMethods.getState(clientId, 'test')).toEqual('false')
+                    expect(internalMethods.getState(clientId, 'test2')).toEqual(true)
                     await client.setState({ test2: false })
-                    expect(internalMethods.getState(false, clientId, 'test')).toEqual('false')
-                    expect(internalMethods.getState(false, clientId, 'test2')).toEqual(false)
+                    expect(internalMethods.getState(clientId, 'test')).toEqual('false')
+                    expect(internalMethods.getState(clientId, 'test2')).toEqual(false)
                     client.disconnect()
                 } catch (error) {
                     throw error
@@ -286,7 +286,7 @@ describe('socketServer', () => {
                     const clientId = client.getSocket().id
                     const fn = vi.fn()
                     let receivedValue = undefined
-                    const callback = value => {
+                    const callback = (value: any) => {
                         receivedValue = value
                         fn()
                     }
@@ -325,9 +325,9 @@ describe('socketServer', () => {
 
                     const [fn1, fn2, fn3] = [vi.fn(), vi.fn(), vi.fn()]
                     let [receivedValue1, receivedValue2, receivedValue3] = [undefined, undefined, undefined]
-                    const callback1 = value => { receivedValue1 = value; fn1() }
-                    const callback2 = value => { receivedValue2 = value; fn2() }
-                    const callback3 = value => { receivedValue3 = value; fn3() }
+                    const callback1 = (value: any) => { receivedValue1 = value; fn1() }
+                    const callback2 = (value: any) => { receivedValue2 = value; fn2() }
+                    const callback3 = (value: any) => { receivedValue3 = value; fn3() }
 
                     await client2.listenState('client-listen1', 'testValue', callback2)
                     await client3.listenState('client-listen1', 'testValue', callback3)
@@ -393,11 +393,11 @@ describe('socketServer', () => {
             const { server } = await createServerForTests('message')
 
             try {
-                function multiplication(...args) {
+                function multiplication(...args: number[]) {
                     return args.reduce((acc, value) => acc * value, 1)
                 }
 
-                function sum(...args) {
+                function sum(...args: number[]) {
                     return args.reduce((acc, value) => acc + value, 0)
                 }
 
@@ -461,6 +461,89 @@ describe('socketServer', () => {
             }
 
         })
+
+        test('Nomes iguais com allowMultiple = true', async () => {
+
+            const server = await socketServer.createServer(3100, { rules: { 'client': { allowMultiple: true } } })
+            expect(server.engine.clientsCount).toBe(0)
+
+            try {
+
+                const onDuplicated = vi.fn()
+                const serverUrl = `http://localhost:3100`
+                const client1 = socketClient.createClient({ url: serverUrl, name: 'client', onDuplicated })
+                const client2 = socketClient.createClient({ url: serverUrl, name: 'client', onDuplicated })
+                const client3 = socketClient.createClient({ url: serverUrl, name: 'client', onDuplicated })
+
+                await Promise.all([client1, client2, client3].map(client => client.waitSinchronization()))
+
+                expect(onDuplicated).toHaveBeenCalledTimes(0)
+
+                client1.disconnect()
+                client2.disconnect()
+                client3.disconnect()
+
+            } catch (error) {
+                throw error
+            } finally {
+                server.close()
+            }
+
+        })
+
+        test('Notifica multiplas conexões', async () => {
+
+            const server = await socketServer.createServer(3100, { rules: { 'client': { allowMultiple: true } } })
+            expect(server.engine.clientsCount).toBe(0)
+
+            try {
+
+                const onDuplicated = vi.fn()
+                const serverUrl = `http://localhost:3100`
+                const originEvent = socketClient.createClient({ url: serverUrl, name: 'origin', onDuplicated, states: { test: 'Hello World!' } })
+                const client1 = socketClient.createClient({ url: serverUrl, name: 'client', onDuplicated })
+                const client2 = socketClient.createClient({ url: serverUrl, name: 'client', onDuplicated })
+                const client3 = socketClient.createClient({ url: serverUrl, name: 'client', onDuplicated })
+
+                await Promise.all([client1, client2, client3, originEvent].map(client => client.waitSinchronization()))
+
+                expect(onDuplicated).toHaveBeenCalledTimes(0)
+
+                const fn = vi.fn()
+
+                client1.listenState('origin', 'test', fn)
+                client2.listenState('origin', 'test', fn)
+                client3.listenState('origin', 'test', fn)
+
+                await delay(500)
+
+                expect(fn).toHaveBeenCalledTimes(3)
+                expect(fn).toHaveBeenNthCalledWith(1, 'Hello World!', 'origin:test')
+                expect(fn).toHaveBeenNthCalledWith(2, 'Hello World!', 'origin:test')
+                expect(fn).toHaveBeenNthCalledWith(3, 'Hello World!', 'origin:test')
+
+                await originEvent.setState({ test: 'Hello World! 2' })
+
+                await delay(500)
+
+                expect(fn).toHaveBeenCalledTimes(6)
+                expect(fn).toHaveBeenNthCalledWith(4, 'Hello World! 2', 'origin:test')
+                expect(fn).toHaveBeenNthCalledWith(5, 'Hello World! 2', 'origin:test')
+                expect(fn).toHaveBeenNthCalledWith(6, 'Hello World! 2', 'origin:test')
+
+                originEvent.disconnect()
+                client1.disconnect()
+                client2.disconnect()
+                client3.disconnect()
+
+            } catch (error) {
+                throw error
+            } finally {
+                server.close()
+            }
+
+        })
+
 
         test('Desconexão', async () => {
 
@@ -565,6 +648,7 @@ describe('socketServer', () => {
                 client2.disconnect()
 
             } catch (error) {
+                console.log('error', error)
                 throw error
             } finally {
                 server2.close()
@@ -576,9 +660,9 @@ describe('socketServer', () => {
 
             const [fn1, fn2, fn3] = [vi.fn(), vi.fn(), vi.fn()]
             let [receivedValue1, receivedValue2, receivedValue3] = [undefined, undefined, undefined]
-            const callback1 = value => { receivedValue1 = value; fn1() }
-            const callback2 = value => { receivedValue2 = value; fn2() }
-            const callback3 = value => { receivedValue3 = value; fn3() }
+            const callback1 = (value: any) => { receivedValue1 = value; fn1() }
+            const callback2 = (value: any) => { receivedValue2 = value; fn2() }
+            const callback3 = (value: any) => { receivedValue3 = value; fn3() }
             const client1 = socketClient.createClient({ url: `http://localhost:3102`, name: 'client-listen-1' })
             const client2 = socketClient.createClient({ url: `http://localhost:3102`, name: 'client-listen-2' })
 
@@ -596,9 +680,9 @@ describe('socketServer', () => {
 
                     await client1.setState({ testValue: false })
 
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue')).toBe(false)
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue2')).toBe(undefined)
-                    expect(internalMethods.getState(false, client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue')).toBe(false)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue2')).toBe(undefined)
+                    expect(internalMethods.getState(client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
                     expect(fn1).toHaveBeenCalledTimes(0)
                     expect(fn2).toHaveBeenCalledTimes(0)
                     expect(fn3).toHaveBeenCalledTimes(2)
@@ -617,13 +701,13 @@ describe('socketServer', () => {
 
             test('Teste de limpeza', async () => {
                 try {
-                    internalMethods.getState(false, client1.getSocket().id, 'testValue')
+                    internalMethods.getState(client1.getSocket().id, 'testValue')
                     expect(true).toBe(false)
-                } catch (error) { expect(error).toBe('Client not found') }
+                } catch (error) { expect(error).toBe('Client id is required') }
                 try {
-                    internalMethods.getState(false, client2.getSocket().id, 'testValue')
+                    internalMethods.getState(client2.getSocket().id, 'testValue')
                     expect(true).toBe(false)
-                } catch (error) { expect(error).toBe('Client not found') }
+                } catch (error) { expect(error).toBe('Client id is required') }
             })
 
 
@@ -634,9 +718,9 @@ describe('socketServer', () => {
                     await client1.waitSinchronization()
                     await client2.waitSinchronization()
 
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue')).toBe(false)
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue2')).toBe(undefined)
-                    expect(internalMethods.getState(false, client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue')).toBe(false)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue2')).toBe(undefined)
+                    expect(internalMethods.getState(client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
                     expect(fn1).toHaveBeenCalledTimes(0)
                     expect(fn2).toHaveBeenCalledTimes(0)
                     expect(fn3).toHaveBeenCalledTimes(3)
@@ -646,9 +730,9 @@ describe('socketServer', () => {
 
                     await client1.setState({ testValue2: 'test' })
 
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue')).toBe(false)
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue2')).toBe('test')
-                    expect(internalMethods.getState(false, client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue')).toBe(false)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue2')).toBe('test')
+                    expect(internalMethods.getState(client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
                     expect(fn1).toHaveBeenCalledTimes(0)
                     expect(fn2).toHaveBeenCalledTimes(0)
                     expect(fn3).toHaveBeenCalledTimes(3)
@@ -658,9 +742,9 @@ describe('socketServer', () => {
 
                     await client2.listenState('client-listen-1', 'testValue2', callback2)
 
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue')).toBe(false)
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue2')).toBe('test')
-                    expect(internalMethods.getState(false, client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue')).toBe(false)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue2')).toBe('test')
+                    expect(internalMethods.getState(client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
                     expect(fn1).toHaveBeenCalledTimes(0)
                     expect(fn2).toHaveBeenCalledTimes(1)
                     expect(fn3).toHaveBeenCalledTimes(3)
@@ -684,9 +768,9 @@ describe('socketServer', () => {
                     await client1.waitSinchronization()
                     await client2.waitSinchronization()
 
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue')).toBe(false)
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue2')).toBe('test')
-                    expect(internalMethods.getState(false, client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue')).toBe(false)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue2')).toBe('test')
+                    expect(internalMethods.getState(client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
                     expect(fn1).toHaveBeenCalledTimes(0)
                     expect(fn2).toHaveBeenCalledTimes(2)
                     expect(fn3).toHaveBeenCalledTimes(4)
@@ -696,9 +780,9 @@ describe('socketServer', () => {
 
                     await client1.listenState('client-listen-2', 'whatsAppStatus', callback1)
 
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue')).toBe(false)
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue2')).toBe('test')
-                    expect(internalMethods.getState(false, client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue')).toBe(false)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue2')).toBe('test')
+                    expect(internalMethods.getState(client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
                     expect(fn1).toHaveBeenCalledTimes(1)
                     expect(fn2).toHaveBeenCalledTimes(2)
                     expect(fn3).toHaveBeenCalledTimes(4)
@@ -708,9 +792,9 @@ describe('socketServer', () => {
 
                     await client2.setState({ whatsAppStatus: 'connected' })
 
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue')).toBe(false)
-                    expect(internalMethods.getState(false, client1.getSocket().id, 'testValue2')).toBe('test')
-                    expect(internalMethods.getState(false, client2.getSocket().id, 'whatsAppStatus')).toBe('connected')
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue')).toBe(false)
+                    expect(internalMethods.getState(client1.getSocket().id, 'testValue2')).toBe('test')
+                    expect(internalMethods.getState(client2.getSocket().id, 'whatsAppStatus')).toBe('connected')
                     expect(fn1).toHaveBeenCalledTimes(2)
                     expect(fn2).toHaveBeenCalledTimes(2)
                     expect(fn3).toHaveBeenCalledTimes(4)

@@ -17,7 +17,7 @@ export function getConnectionById(id: string) {
 }
 
 export function getConnectionByName(name: string) {
-    return Object.values(connections).find(connection => connection?.config?.name === name)
+    return Object.values(connections).filter(connection => connection?.config?.name === name)
 }
 
 export default {

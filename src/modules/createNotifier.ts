@@ -41,7 +41,7 @@ function createNotifier() {
         if (!exists(listenerId, eventName)) throw new Error('Listener not found')
         try {
             const { listener } = subscribers[listenerId]
-            const result = listener(data, listenerId)
+            const result = listener(data, eventName)
             if (result instanceof Promise) return await result
             return result
         } catch (error) {

@@ -12,16 +12,17 @@ function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
     }: {
         originId?: string,
         targetName?: string
-    }, timeout = 5000): Promise<ConnectionInServer<Socket>> {
+    }, timeout = 5000): Promise<ConnectionInServer<Socket>[]> {
         function getConnection() {
-            return originId ? getConnectionById(originId) : getConnectionByName(targetName)
+            return originId ? [getConnectionById(originId)] : getConnectionByName(targetName)
         }
         return new Promise((resolve, reject) => {
             const interval = setInterval(() => {
-                const connection = getConnection()
-                if (!connection?.config) return
+                const connections = getConnection()
+                if (!connections.length) return
+                if (!connections.every(connection => connection?.config)) return
                 clearInterval(interval)
-                return resolve(connection)
+                return resolve(connections)
             }, 100)
             setTimeout(() => {
                 clearInterval(interval)
@@ -31,6 +32,7 @@ function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
     }
 
     function emitError(messageError: string | { message: string } = 'Error', id?: string) {
+        // console.log('emitError', { messageError, id })
         const error = { message: typeof messageError != 'string' ? messageError.message : messageError }
         if (!id) throw error
         return socket.emit(eventNames.response, { id, response: undefined, success: false, error })
@@ -38,8 +40,8 @@ function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
 
     async function callProcedure({ id, targetName, call, args }: ClientEmitProcedure) {
         try {
-            const connection = await waitConnection({ targetName })
-            const methods = connection.config?.methods || []
+            const connection = (await waitConnection({ targetName }))[0]
+            const methods = connection?.config?.methods || []
             if (!methods.includes(call)) throw `Method not found ${call}`
             const originId = socket.id
             const values: ServerEmitProcedure = { id, originId, call, args }
@@ -50,6 +52,7 @@ function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
     }
 
     async function callResponse({ id, originId, response, success, error }: ClientEmitResponse) {
+        // console.log('callResponse', { id, originId, response, success, error })
         try {
             const connection = getConnectionById(originId)
             if (!connection) await waitConnection({ originId })
@@ -61,6 +64,7 @@ function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
     }
 
     function processRequest(request: any) {
+        // console.log('processRequest', request)
         if (socket.id != 'server') socket.emit(eventNames.confirm, { id: request.id })
         const type = request?.targetName ? eventNames.procedure : eventNames.response
         if (type === eventNames.procedure) return callProcedure(request)
@@ -68,6 +72,7 @@ function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
         return emitError('Invalid request')
     }
 
+    // console.log('onMessage', requests)
     return requests.map((request: any) => processRequest(request))
 
 }

@@ -46,4 +46,21 @@ export type ConnectionInServer<SocketType> = {
     },
 }
 
+export type SetupValues = {
+    name: string,
+    methods: string[],
+    states: {
+        [key: string]: any
+    },
+    listeners: string[]
+}
+
+export type ServerOptionsT = {
+    rules?: {
+        [name: string]: {
+            allowMultiple?: boolean,
+        }
+    }
+}
+
 export type EmitRequestValues = ClientEmitProcedure | ClientEmitResponse
