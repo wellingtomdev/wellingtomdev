@@ -1,5 +1,6 @@
 import { Socket } from "socket.io"
 import { ConnectionInServer } from "../types"
+import { clearState } from "./internalMethods"
 
 const connections: { [key: string]: ConnectionInServer<Socket> } = {}
 
@@ -9,6 +10,7 @@ export function setConnection(connection: ConnectionInServer<Socket>) {
 }
 
 export function deleteConnection(id: string) {
+    clearState(id)
     delete connections[id]
 }
 

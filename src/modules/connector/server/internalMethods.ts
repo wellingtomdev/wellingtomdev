@@ -120,17 +120,17 @@ function getClientNameByClientId(clientId: string) {
     return clientName
 }
 
-function getState(clientId?: string, key?: string) {
+function getState(clientId?: string, stateName?: string) {
     if (!clientId) throw 'Client id is required'
-    if (!key) throw 'Key is required'
+    if (!stateName) throw 'stateName is required'
     const clientName = getClientNameByClientId(clientId)
-    return getStateByClientName(clientName, key)
+    return getStateByClientName(clientName, stateName)
 }
 
-function getStateByClientName(clientName: string, key: string) {
+function getStateByClientName(clientName: string, stateName: string) {
     if (!clientName) throw 'Client not found'
     if (!states[clientName]) return undefined
-    return states[clientName][key]
+    return states[clientName][stateName]
 }
 
 function listenState(originId: string, tagData: string) {
@@ -145,6 +145,23 @@ function listenState(originId: string, tagData: string) {
     emitStateById(originId, { tagData, value: state })
     if (!states[clientName]) return undefined
     return states[clientName][propName]
+}
+
+export function clearState(clientId: string) {
+    try {
+        const clientName = getClientNameByClientId(clientId)
+        if (!clientName) throw 'Client not found'
+        states[clientName] = {}
+        const listennerEvents = listeners[clientName]
+        if (!listennerEvents) return
+        Object.keys(listennerEvents).map(stateName => {
+            const listennerIds = listennerEvents[stateName]
+            listennerIds.map(clientId => {
+                emitStateById(clientId, { tagData: `${clientName}:${stateName}`, value: undefined })
+            })
+        })
+        listeners[clientName] = {}
+    } catch (error) { }
 }
 
 export function _clearAllStates() {
