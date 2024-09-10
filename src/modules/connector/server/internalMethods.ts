@@ -160,7 +160,6 @@ export function clearState(clientId: string) {
                 emitStateById(clientId, { tagData: `${clientName}:${stateName}`, value: undefined })
             })
         })
-        listeners[clientName] = {}
     } catch (error) { }
 }
 
