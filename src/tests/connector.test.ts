@@ -118,6 +118,56 @@ describe('socketServer', () => {
             }
         })
 
+        test('Com metodos e retorno de erro', async () => {
+            const { server } = await createServerForTests(3200, 'message')
+
+            try {
+                const methods = {
+                    string: async () => { throw 'Test Error' },
+                    object: async () => { throw { message: 'Test Error' } },
+                    errorClass: async () => { throw new Error('Test Error') },
+                    complex: async () => { throw { message: 'Test Error', code: 500 } }
+                }
+                const client = socketClient.createClient({ url: `http://localhost:3100`, methods })
+                await client.waitSinchronization()
+
+                const targetName = 'client'
+                try {
+                    await client.request(targetName, 'string')
+                } catch (error: any) {
+                    expect(error).toBeDefined()
+                    expect(error).toEqual('Test Error')
+                }
+
+                try {
+                    await client.request(targetName, 'object')
+                } catch (error: any) {
+                    expect(error).toBeDefined()
+                    expect(error).toEqual({ message: 'Test Error' })
+                }
+
+                try {
+                    await client.request(targetName, 'errorClass')
+                } catch (error: any) {
+                    expect(error).toBeDefined()
+                    expect(error).toEqual(new Error('Test Error'))
+                }
+
+                try {
+                    await client.request(targetName, 'complex')
+                } catch (error: any) {
+                    expect(error).toBeDefined()
+                    expect(error).toEqual({ message: 'Test Error', code: 500 })
+                }
+
+                client.disconnect()
+            } catch (error) {
+                throw error
+            } finally {
+                server.close()
+            }
+        })
+
     })
 
     describe('Estados', () => {

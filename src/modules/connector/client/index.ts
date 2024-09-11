@@ -6,6 +6,26 @@ import { confirmRequest, createRequestId, createRequestRegister, deleteRequest, 
 import createNotifier from '../../createNotifier'
 import getTagData from '../getTagData'
 
+function encodeError(error: any){
+    if(error instanceof Error) return {
+        type: 'Error Class',
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+    }
+    return error
+}
+
+function decodeError(error: any){
+    if(error.type === 'Error Class') {
+        const errorClass = new Error(error.message)
+        errorClass.name = error.name
+        errorClass.stack = error.stack
+        return errorClass
+    }
+    return error
+}
+
 function createClient({
     url = "http://localhost:3100",
     name = "client",
@@ -130,7 +150,7 @@ function createClient({
             const response = await method(...args)
             emit({ id, originId, response, success: true, error: undefined })
         } catch (error) {
-            emit({ id, originId, response: undefined, success: false, error })
+            emit({ id, originId, response: undefined, success: false, error: encodeError(error) })
         }
     }
 
@@ -138,7 +158,7 @@ function createClient({
         try {
             if (!getRequest(id)) return
             const { resolve, reject } = getRequest(id)
-            success ? resolve(response) : reject(error)
+            success ? resolve(response) : reject(decodeError(error))
             deleteRequest(id)
         } catch (error) {
             // console.error(error)
