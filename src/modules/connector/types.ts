@@ -43,6 +43,7 @@ export type ConnectionInServer<SocketType> = {
         name?: string
         methods?: Array<string>
         states?: { [key: string]: any }
+        isMultiple?: boolean
     },
 }
 

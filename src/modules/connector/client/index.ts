@@ -45,7 +45,7 @@ function createClient({
 
     const statesNofitier = createNotifier()
 
-    const state: any = { url, states }
+    const state: any = { url, states, isMultiple: false }
     const socket = io(url)
     const listeners: string[] = []
 
@@ -130,6 +130,7 @@ function createClient({
             if (config.name) state.name = config.name
             if (config.states) state.states = config.states
             if (config.methods) state.methods = config.methods
+            if (config.isMultiple) state.isMultiple = config.isMultiple
             setSinchronized(true)
         } catch (error) {
             setSinchronized(false)
@@ -148,8 +149,10 @@ function createClient({
             const method = methods[call]
             if (!method) throw new Error(`Method ${call} not found`)
             const response = await method(...args)
+            if(state.isMultiple) return
             emit({ id, originId, response, success: true, error: undefined })
         } catch (error) {
+            if(state.isMultiple) return
             emit({ id, originId, response: undefined, success: false, error: encodeError(error) })
         }
     }

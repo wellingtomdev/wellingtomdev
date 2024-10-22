@@ -171,11 +171,7 @@ describe('socketServer', () => {
         test('Após reconectar', async () => {
             const reactName = 'react-interface'
 
-            const server = await socketServer.createServer(3100, {
-                rules: {
-                    [reactName]: { allowMultiple: true }
-                }
-            })
+            const server = await socketServer.createServer(3100)
 
             const coreClient = socketClient.createClient({ name: 'core-application', url: `http://localhost:3100` })
 
@@ -214,6 +210,55 @@ describe('socketServer', () => {
             }
 
             coreClient.disconnect()
+        })
+
+        test('múltiplos clients', async () => {
+            const reactName = 'react-interface'
+            const serverPort = 3101
+            const server = await socketServer.createServer(serverPort, {
+                rules: {
+                    [reactName]: { allowMultiple: true }
+                }
+            })
+
+            const calls1: string[] = []
+            const calls2: string[] = []
+
+            const methods1 = { refresh: async (sourceId: string) => calls1.push(sourceId) }
+            const methods2 = { refresh: async (sourceId: string) => calls2.push(sourceId) }
+
+            const coreClient = socketClient.createClient({ name: 'core-application', url: `http://localhost:${serverPort}` })
+            const reactClient1 = socketClient.createClient({ name: reactName, url: `http://localhost:${serverPort}`, methods: methods1 })
+            const reactClient2 = socketClient.createClient({ name: reactName, url: `http://localhost:${serverPort}`, methods: methods2 })
+
+            try {
+                await reactClient1.waitSinchronization()
+                await reactClient2.waitSinchronization()
+
+                expect(calls1).toStrictEqual([])
+                expect(calls2).toStrictEqual([])
+
+                const sourceId1 = random.string()
+                const result1 = await coreClient.request(reactName, 'refresh', sourceId1)
+                expect(result1).not.toBeDefined()
+                expect(calls1).toStrictEqual([sourceId1])
+                expect(calls2).toStrictEqual([sourceId1])
+
+                const sourceId2 = random.string()
+                const result2 = await coreClient.request(reactName, 'refresh', sourceId2)
+                expect(result2).not.toBeDefined()
+                expect(calls1).toStrictEqual([sourceId1, sourceId2])
+                expect(calls2).toStrictEqual([sourceId1, sourceId2])
+
+                reactClient1.disconnect()
+                reactClient2.disconnect()
+
+            } catch (error) {
+                throw error
+            } finally {
+                await server.close()
+            }
+
         })
 
     })

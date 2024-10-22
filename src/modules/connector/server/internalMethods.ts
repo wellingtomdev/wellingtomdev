@@ -94,7 +94,8 @@ async function setup(originId: string, { name, methods = [], states = {}, listen
             throw 'Connection already exists'
         }
     }
-    const config = { name, methods, states }
+    const isMultiple = serverOptions.rules?.[name]?.allowMultiple || false
+    const config = { name, methods, states, isMultiple }
     connection.config = config
     setState(originId, states)
     const stateValues = getStatesByListener(...listeners)

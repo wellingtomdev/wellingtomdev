@@ -40,12 +40,21 @@ function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
 
     async function callProcedure({ id, targetName, call, args }: ClientEmitProcedure) {
         try {
-            const connection = (await waitConnection({ targetName }))[0]
-            const methods = connection?.config?.methods || []
-            if (!methods.includes(call)) throw `Method not found ${call}`
-            const originId = socket.id
-            const values: ServerEmitProcedure = { id, originId, call, args }
-            connection.socket.emit(eventNames.procedure, values)
+            const connections = await waitConnection({ targetName })
+            const isMultiple = connections[0].config?.isMultiple || false
+            for (const connection of connections) {
+                try {
+                    const methods = connection?.config?.methods || []
+                    if (!methods.includes(call)) throw `Method not found ${call}`
+                    const originId = socket.id
+                    const values: ServerEmitProcedure = { id, originId, call, args }
+                    connection.socket.emit(eventNames.procedure, values)
+                } catch (error) { 
+                    if(!isMultiple) throw error
+                }
+            }
+            if (!isMultiple) return
+            callResponse({ id, originId: socket.id, response: undefined, success: true, error: undefined })
         } catch (error: any) {
             emitError(error, id)
         }
