@@ -119,7 +119,7 @@ describe('socketServer', () => {
         })
 
         test('Com metodos e retorno de erro', async () => {
-            const { server } = await createServerForTests(3200, 'message')
+            const { server } = await createServerForTests('message')
 
             try {
                 const methods = {
@@ -166,6 +166,54 @@ describe('socketServer', () => {
             } finally {
                 server.close()
             }
+        })
+
+        test('Após reconectar', async () => {
+            const reactName = 'react-interface'
+
+            const server = await socketServer.createServer(3100, {
+                rules: {
+                    [reactName]: { allowMultiple: true }
+                }
+            })
+
+            const coreClient = socketClient.createClient({ name: 'core-application', url: `http://localhost:3100` })
+
+            const methods = { refresh: async (sourceId: string) => sourceId }
+
+            try {
+                const reactClient = socketClient.createClient({ name: reactName, url: `http://localhost:3100`, methods })
+                await reactClient.waitSinchronization()
+
+                const sourceId = random.string()
+                const result = await coreClient.request(reactName, 'refresh', sourceId)
+                expect(result).toBeDefined()
+                expect(result).toBe(sourceId)
+
+                reactClient.disconnect()
+
+            } catch (error) {
+                throw error
+            }
+
+            try {
+
+                const reactClient = socketClient.createClient({ name: reactName, url: `http://localhost:3100`, methods })
+                await reactClient.waitSinchronization()
+
+                const sourceId = random.string()
+                const result = await coreClient.request(reactName, 'refresh', sourceId)
+                expect(result).toBeDefined()
+                expect(result).toBe(sourceId)
+
+                reactClient.disconnect()
+            } catch (error) {
+                throw error
+            } finally {
+                await server.close()
+            }
+
+            coreClient.disconnect()
         })
 
     })
@@ -241,7 +289,7 @@ describe('socketServer', () => {
                 } catch (error) {
                     throw error
                 } finally {
-                    server.close()
+                    await server.close()
                 }
             })
 
@@ -256,7 +304,7 @@ describe('socketServer', () => {
                 } catch (error) {
                     throw error
                 } finally {
-                    server.close()
+                    await server.close()
                 }
             })
 
@@ -271,7 +319,7 @@ describe('socketServer', () => {
                 } catch (error) {
                     throw error
                 } finally {
-                    server.close()
+                    await server.close()
                 }
             })
 
@@ -288,7 +336,7 @@ describe('socketServer', () => {
                 } catch (error) {
                     throw error
                 } finally {
-                    server.close()
+                    await server.close()
                 }
             })
 
@@ -317,7 +365,7 @@ describe('socketServer', () => {
                 } catch (error) {
                     throw error
                 } finally {
-                    server.close()
+                    await server.close()
                 }
             })
 
@@ -358,7 +406,7 @@ describe('socketServer', () => {
                 } catch (error) {
                     throw error
                 } finally {
-                    server.close()
+                    await server.close()
                 }
             })
 
@@ -428,7 +476,7 @@ describe('socketServer', () => {
                 } catch (error) {
                     throw error
                 } finally {
-                    server.close()
+                    await server.close()
                 }
             })
 
@@ -479,7 +527,7 @@ describe('socketServer', () => {
             } catch (error) {
                 throw error
             } finally {
-                server.close()
+                await server.close()
             }
 
         })
@@ -507,7 +555,7 @@ describe('socketServer', () => {
             } catch (error) {
                 throw error
             } finally {
-                server.close()
+                await server.close()
             }
 
         })
@@ -536,7 +584,7 @@ describe('socketServer', () => {
             } catch (error) {
                 throw error
             } finally {
-                server.close()
+                await server.close()
             }
 
         })
@@ -589,7 +637,7 @@ describe('socketServer', () => {
             } catch (error) {
                 throw error
             } finally {
-                server.close()
+                await server.close()
             }
 
         })
@@ -619,7 +667,7 @@ describe('socketServer', () => {
             } catch (error) {
                 throw error
             } finally {
-                server.close()
+                await server.close()
             }
 
         })
@@ -663,7 +711,7 @@ describe('socketServer', () => {
             } catch (error) {
                 throw error
             } finally {
-                server.close()
+                await server.close()
             }
 
             const request1 = client1.request('client2', 'call', 'reconect test')
@@ -701,7 +749,7 @@ describe('socketServer', () => {
                 console.log('error', error)
                 throw error
             } finally {
-                server2.close()
+                await server2.close()
             }
 
         }, 10000)
@@ -743,9 +791,9 @@ describe('socketServer', () => {
                 } catch (error) {
                     throw error
                 } finally {
-                    server.close()
+                    await server.close()
                     _clearAllStates()
-                    await delay(100)
+                    await delay(200)
                 }
             })
 
@@ -806,7 +854,7 @@ describe('socketServer', () => {
                 } catch (error) {
                     throw error
                 } finally {
-                    server2.close()
+                    await server2.close()
                     await delay(100)
                 }
             })
@@ -860,7 +908,7 @@ describe('socketServer', () => {
                 } catch (error) {
                     throw error
                 } finally {
-                    server3.close()
+                    await server3.close()
                 }
 
             })
