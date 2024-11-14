@@ -2,7 +2,7 @@ import { Socket } from "socket.io"
 import delay from "../../delay"
 import eventNames from "../eventNames"
 import getTagData from "../getTagData"
-import { SetupValues } from "../types"
+import { SetupValues, StateT } from "../types"
 import { getConnectionById, getConnectionByName } from "./connections"
 import { getServerOptions } from "./serverOptions"
 
@@ -18,14 +18,14 @@ const listeners: {
     }
 } = {}
 
-function emitStateById(clientId: string, ...states: { tagData: string, value: any }[]) {
+function emitStateById(clientId: string, ...states: StateT[]) {
     const connection = getConnectionById(clientId)
     if (!connection) return false
     connection.socket.emit(eventNames.changeState, ...states)
     return true
 }
 
-function emitStateByName(clientName: string, ...states: { tagData: string, value: any }[]) {
+function emitStateByName(clientName: string, ...states: StateT[]) {
     const connections = getConnectionByName(clientName)
     if (!connections.length) return false
     connections.map(({ id }) => emitStateById(id, ...states))
@@ -40,7 +40,7 @@ function getKeyAnValue(simpleObject: { [key: string]: any }) {
 }
 
 function notifyChangeState(clientName: string, newStates: { [key: string]: any }) {
-    const emitValues: { [clientId: string]: { tagData: string, value: any }[] } = {}
+    const emitValues: { [clientId: string]: StateT[] } = {}
     const clientListeners = listeners[clientName]
     if (!clientListeners) return
     Object.keys(newStates).map((stateName) => {
@@ -69,7 +69,7 @@ function getStatesByListener(...listenerNames: string[]) {
         const value = state[key]
         acc.push({ tagData, value })
         return acc
-    }, [] as { tagData: string, value: any }[])
+    }, [] as StateT[])
 }
 
 function getPortInSocket(socket: Socket) {
@@ -148,6 +148,11 @@ function listenState(originId: string, tagData: string) {
     return states[clientName][propName]
 }
 
+function ping() {
+    const receivedIn = Date.now()
+    return receivedIn
+}
+
 export function clearState(clientId: string) {
     try {
         const clientName = getClientNameByClientId(clientId)
@@ -158,7 +163,7 @@ export function clearState(clientId: string) {
         Object.keys(listennerEvents).map(stateName => {
             const listennerIds = listennerEvents[stateName]
             listennerIds.map(clientId => {
-                emitStateById(clientId, { tagData: `${clientName}:${stateName}`, value: undefined })
+                emitStateById(clientId, { tagData: getTagData(clientName, stateName), value: undefined })
             })
         })
     } catch (error) { }
@@ -178,4 +183,5 @@ export default {
     setState,
     getState,
     listenState,
+    ping,
 }

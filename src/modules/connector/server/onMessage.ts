@@ -2,6 +2,7 @@ import { Socket } from "socket.io"
 import eventNames from "../eventNames"
 import { ClientEmitProcedure, ClientEmitResponse, ConnectionInServer, ServerEmitProcedure, ServerEmitResponse } from "../types"
 import { getConnectionById, getConnectionByName } from "./connections"
+import delay from "../../delay"
 
 
 function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
@@ -13,14 +14,18 @@ function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
         originId?: string,
         targetName?: string
     }, timeout = 5000): Promise<ConnectionInServer<Socket>[]> {
-        function getConnection() {
-            return originId ? [getConnectionById(originId)] : getConnectionByName(targetName)
+        function getConnections() {
+            const connections = originId ? [getConnectionById(originId)] : getConnectionByName(targetName)
+            if (!connections.length) return false
+            if (!connections.every(connection => connection?.config)) return false
+            return connections
         }
         return new Promise((resolve, reject) => {
+            const connections = getConnections()
+            if (connections !== false) return resolve(connections)
             const interval = setInterval(() => {
-                const connections = getConnection()
-                if (!connections.length) return
-                if (!connections.every(connection => connection?.config)) return
+                const connections = getConnections()
+                if (connections === false) return
                 clearInterval(interval)
                 return resolve(connections)
             }, 100)
@@ -49,11 +54,12 @@ function onMessage(socket: { id: string, emit: Function }, ...requests: any[]) {
                     const originId = socket.id
                     const values: ServerEmitProcedure = { id, originId, call, args }
                     connection.socket.emit(eventNames.procedure, values)
-                } catch (error) { 
-                    if(!isMultiple) throw error
+                } catch (error) {
+                    if (!isMultiple) throw error
                 }
             }
             if (!isMultiple) return
+            await delay(10)
             callResponse({ id, originId: socket.id, response: undefined, success: true, error: undefined })
         } catch (error: any) {
             emitError(error, id)

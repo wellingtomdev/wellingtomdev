@@ -65,3 +65,8 @@ export type ServerOptionsT = {
 }
 
 export type EmitRequestValues = ClientEmitProcedure | ClientEmitResponse
+
+export type StateT = {
+    tagData: string,
+    value: any
+}

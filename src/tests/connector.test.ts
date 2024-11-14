@@ -64,6 +64,25 @@ describe('socketServer', () => {
 
     })
 
+    describe('ping', () => {
+
+        test('Testa o tempo de resposta', async () => {
+            const { server, port } = await createServerForTests(3101, 'connection')
+            try {
+                const client = socketClient.createClient({ url: `http://localhost:${port}` })
+                await client.waitSinchronization()
+                const ping = await client.ping()
+                expect(ping.time).toBeLessThan(3)
+                client.disconnect()
+            } catch (error) {
+                throw error
+            } finally {
+                server.close()
+            }
+        })
+
+    })
+
     describe('request', async () => {
 
         test('Sem metodos', async () => {
@@ -838,7 +857,7 @@ describe('socketServer', () => {
                 } finally {
                     await server.close()
                     _clearAllStates()
-                    await delay(200)
+                    await delay(20)
                 }
             })
 
@@ -911,14 +930,14 @@ describe('socketServer', () => {
                 try {
                     await client1.waitSinchronization()
                     await client2.waitSinchronization()
-                    await delay(200)
+                    await delay(20)
 
                     expect(internalMethods.getState(client1.getSocket().id, 'testValue')).toBe(false)
                     expect(internalMethods.getState(client1.getSocket().id, 'testValue2')).toBe('test')
                     expect(internalMethods.getState(client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
                     expect(fn1).toHaveBeenCalledTimes(0)
                     expect(fn2).toHaveBeenCalledTimes(3)
-                    expect(fn3).toHaveBeenCalledTimes(5)
+                    expect(fn3).toHaveBeenCalledTimes(6)
                     expect(receivedValue1).toBe(undefined)
                     expect(receivedValue2).toBe('test')
                     expect(receivedValue3).toBe(false)
@@ -930,7 +949,7 @@ describe('socketServer', () => {
                     expect(internalMethods.getState(client2.getSocket().id, 'whatsAppStatus')).toBe(undefined)
                     expect(fn1).toHaveBeenCalledTimes(1)
                     expect(fn2).toHaveBeenCalledTimes(3)
-                    expect(fn3).toHaveBeenCalledTimes(5)
+                    expect(fn3).toHaveBeenCalledTimes(6)
                     expect(receivedValue1).toBe(undefined)
                     expect(receivedValue2).toBe('test')
                     expect(receivedValue3).toBe(false)
@@ -942,7 +961,7 @@ describe('socketServer', () => {
                     expect(internalMethods.getState(client2.getSocket().id, 'whatsAppStatus')).toBe('connected')
                     expect(fn1).toHaveBeenCalledTimes(2)
                     expect(fn2).toHaveBeenCalledTimes(3)
-                    expect(fn3).toHaveBeenCalledTimes(5)
+                    expect(fn3).toHaveBeenCalledTimes(6)
                     expect(receivedValue1).toBe('connected')
                     expect(receivedValue2).toBe('test')
                     expect(receivedValue3).toBe(false)

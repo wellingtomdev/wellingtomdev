@@ -1,4 +1,5 @@
 const eventNames = {
+    ping: 'ping',
     setup: 'setup',
     message: 'message',
     confirm: 'confirm',

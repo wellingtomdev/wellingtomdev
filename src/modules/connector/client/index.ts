@@ -1,13 +1,13 @@
 import { io } from 'socket.io-client'
 import delay from '../../delay'
 import eventName from '../eventNames'
-import { EmitRequestValues, ServerEmitProcedure, ServerEmitResponse } from '../types'
+import { EmitRequestValues, ServerEmitProcedure, ServerEmitResponse, StateT } from '../types'
 import { confirmRequest, createRequestId, createRequestRegister, deleteRequest, getRequest } from './requestRegister'
 import createNotifier from '../../createNotifier'
 import getTagData from '../getTagData'
 
-function encodeError(error: any){
-    if(error instanceof Error) return {
+function encodeError(error: any) {
+    if (error instanceof Error) return {
         type: 'Error Class',
         name: error.name,
         message: error.message,
@@ -16,8 +16,8 @@ function encodeError(error: any){
     return error
 }
 
-function decodeError(error: any){
-    if(error.type === 'Error Class') {
+function decodeError(error: any) {
+    if (error.type === 'Error Class') {
         const errorClass = new Error(error.message)
         errorClass.name = error.name
         errorClass.stack = error.stack
@@ -97,6 +97,7 @@ function createClient({
         setSinchronized(false)
         state.name = undefined
         state.methods = undefined
+        clearAllStates()
     }
 
     async function emit(request: EmitRequestValues, isSetup: boolean = false) {
@@ -149,10 +150,10 @@ function createClient({
             const method = methods[call]
             if (!method) throw new Error(`Method ${call} not found`)
             const response = await method(...args)
-            if(state.isMultiple) return
+            if (state.isMultiple) return
             emit({ id, originId, response, success: true, error: undefined })
         } catch (error) {
-            if(state.isMultiple) return
+            if (state.isMultiple) return
             emit({ id, originId, response: undefined, success: false, error: encodeError(error) })
         }
     }
@@ -168,10 +169,29 @@ function createClient({
         }
     }
 
-    async function onChangeState(...states: { tagData: string, value: any }[]) {
+    const cachedStates: { [tagData: string]: StateT } = {}
+
+    function setCachedState(tagData: string, value: any) {
+        cachedStates[tagData] = { tagData, value }
+    }
+
+    function getCachedState(tagData: string) {
+        return cachedStates[tagData]
+    }
+
+    async function onChangeState(...states: StateT[]) {
         states.map(({ tagData, value }) => {
+            const cached = getCachedState(tagData)
+            if (cached && cached.value === value) return
             statesNofitier.notifyAll(value, tagData)
+            setCachedState(tagData, value)
         })
+    }
+
+    async function clearAllStates(){
+        const tagsData = Object.keys(cachedStates)
+        const states = tagsData.map(tagData => ({ tagData, value: undefined }))
+        await onChangeState(...states)
     }
 
     async function setState(value: { [key: string]: any }): Promise<any> {
@@ -191,15 +211,28 @@ function createClient({
 
     async function listenState(targetName: string, key: string, callback: (value: any, tagData: string) => any) {
         const tagData = getTagData(targetName, key)
-        const isRegistered = statesNofitier.count(tagData)
+        // const isRegistered = statesNofitier.count(tagData)
         const listenerId = statesNofitier.subscribe(callback, tagData)
-        if (!isRegistered) {
+        if (!listeners.includes(tagData)) {
             await request('server', 'listenState', tagData)
             listeners.push(tagData)
         }
         return listenerId
     }
 
+    async function ping() {
+        const initiedIn = Date.now()
+        const receivedIn = await request('server', 'ping') as number
+        const finishedIn = Date.now()
+        return {
+            initiedIn,
+            receivedIn,
+            finishedIn,
+            time: finishedIn - initiedIn,
+            req: receivedIn - initiedIn,
+            res: finishedIn - receivedIn,
+        }
+    }
 
     socket.on(eventName.setup, onSetup)
     socket.on(eventName.confirm, onConfirm)
@@ -210,6 +243,7 @@ function createClient({
 
     return {
         emit,
+        ping,
         state,
         setState,
         getState,
