@@ -19,7 +19,7 @@ function onConnection(socket: Socket) {
 }
 
 function getSocketServer(httpServer: any) {
-    const io = new Server(httpServer, { cors: { origin: '*' }, maxHttpBufferSize: 1024 * 1024 * 1024 * 4 })
+    const io = new Server(httpServer, { cors: { origin: '*' }, maxHttpBufferSize: 1024 * 1024 * 1024 * 20 })
     io.on(eventName.connection, onConnection)
     return io
 }
