@@ -1,7 +1,7 @@
 {
     "name": "wellingtomdev",
     "author": "Wellington Mesquita",
-    "version": "1.4.8",
+    "version": "1.4.9",
     "main": "./src/dist/node/index.js",
     "keywords": [],
     "license": "ISC",
